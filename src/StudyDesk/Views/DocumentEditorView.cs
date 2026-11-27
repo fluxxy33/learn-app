@@ -196,7 +196,7 @@ public sealed class DocumentEditorView : EditorShell, IPage, IEditor
 
         // ------------------------------------------------- Ruban : Accueil
         _fontFamily = Combo(Fonts.Cast<object>(), 140, "Police");
-        _fontSize = Combo(Sizes.Select(s => (object)s.ToString()), 64, "Taille", editable: true);
+        _fontSize = Combo(Sizes.Select(s => (object)s.ToString()), 74, "Taille", editable: true);
         _paraStyle = Combo(new object[] { "Texte", "Titre 1", "Titre 2", "Titre 3" }, 96, "Style du paragraphe (les titres deviennent des questions de fiches)");
         _fontFamily.SelectionChanged += (_, _) => { if (!_updatingUi && _fontFamily.SelectedItem is string f) ApplyFormat(TextElement.FontFamilyProperty, new FontFamily(f)); };
         _fontSize.SelectionChanged += (_, _) => { if (!_updatingUi && _fontSize.SelectedItem is string s && double.TryParse(s, out var v)) ApplyFormat(TextElement.FontSizeProperty, v); };
@@ -221,12 +221,12 @@ public sealed class DocumentEditorView : EditorShell, IPage, IEditor
             _bold, _italic, _underline, colorBtn, highlightBtn,
             Ui.Separator(),
             Ui.Tool(Icons.Bullets, null, "Liste à puces", (_, _) => { EditingCommands.ToggleBullets.Execute(null, _rtb); _rtb.Focus(); }),
-            Ui.Tool(Icons.Numbers, null, "Liste numérotée", (_, _) => { EditingCommands.ToggleNumbering.Execute(null, _rtb); _rtb.Focus(); }),
+            Ui.Tool("", "1.2.3", "Liste numérotée", (_, _) => { EditingCommands.ToggleNumbering.Execute(null, _rtb); _rtb.Focus(); }),
             Ui.Tool(Icons.AlignLeft, null, "Aligner à gauche", (_, _) => { EditingCommands.AlignLeft.Execute(null, _rtb); _rtb.Focus(); }),
             Ui.Tool(Icons.AlignCenter, null, "Centrer", (_, _) => { EditingCommands.AlignCenter.Execute(null, _rtb); _rtb.Focus(); }),
             Ui.Tool(Icons.AlignRight, null, "Aligner à droite", (_, _) => { EditingCommands.AlignRight.Execute(null, _rtb); _rtb.Focus(); }),
             Ui.Separator(),
-            Ui.Tool(Icons.Remove, "Effacer la mise en forme", "Remettre le texte sélectionné en texte normal", (_, _) => ClearFormatting()));
+            Ui.Tool(Icons.Remove, null, "Effacer la mise en forme du texte sélectionné", (_, _) => ClearFormatting()));
 
         // ------------------------------------------------- Ruban : Insertion
         var insert = RibbonRow(

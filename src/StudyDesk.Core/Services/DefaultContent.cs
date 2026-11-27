@@ -7,11 +7,10 @@ public static class SubjectIcons
 {
     public static readonly IReadOnlyList<(string Glyph, string Name)> All = new[]
     {
-        ("", "Calculatrice"), ("", "Lettres"), ("", "Histoire"), ("", "Monde"),
-        ("", "Langue"), ("", "Santé"), ("", "Ampoule"), ("", "Discussion"),
-        ("", "Musique"), ("", "Sport"), ("", "Couleurs"), ("", "Code"),
-        ("", "Diplôme"), ("", "Dictionnaire"), ("", "Économie"), ("", "Géographie"),
-        ("", "Nature"), ("", "Ruban"), ("", "Nuage"), ("", "Livres"),
+        ("\uE8EF", "Calculatrice"), ("\uE8D2", "Lettres"), ("\uE81C", "Histoire"), ("\uE909", "Monde"),
+        ("\uE774", "Globe"), ("\uE95E", "Santé"), ("\uEA80", "Ampoule"), ("\uE716", "Personnes"),
+        ("\uE7BE", "Diplôme"), ("\uE8F1", "Livres"), ("\uE8A5", "Document"), ("\uE8B9", "Image"),
+        ("\uE8EA", "Téléphone"), ("\uE9D9", "Graphique"), ("\uE70F", "Crayon"), ("\uE713", "Engrenage"),
     };
 
     public static readonly IReadOnlyList<string> Colors = new[]
@@ -30,11 +29,11 @@ public static class DefaultContent
         var maths = store.AddSubject("Mathématiques", "#2F62D9", "");
         store.AddSubject("Français", "#C2417A", "");
         var histoire = store.AddSubject("Histoire-Géo", "#C2742B", "");
-        var anglais = store.AddSubject("Anglais", "#2B8A5A", "");
+        var anglais = store.AddSubject("Anglais", "#2B8A5A", "\uE774");
         store.AddSubject("SVT", "#5B8C2A", "");
         store.AddSubject("Physique-Chimie", "#7A4FC4", "");
         store.AddSubject("Espagnol", "#D64545", "");
-        store.AddSubject("Philosophie", "#4F6D7A", "");
+        store.AddSubject("Philosophie", "#4F6D7A", "\uE716");
 
         var chGeo = store.AddChapter(maths, "Géométrie");
         store.AddChapter(maths, "Fractions");

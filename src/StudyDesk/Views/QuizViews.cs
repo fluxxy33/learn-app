@@ -104,7 +104,7 @@ public sealed class QuizEditorView : EditorShell, IPage, IEditor
     public string NavKey => "library";
     private readonly LibraryItem _item;
     private readonly Quiz _quiz;
-    private readonly ListBox _list = new() { BorderThickness = new Thickness(0), Background = Brushes.Transparent, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+    private readonly ListBox _list = DeckEditorView.CreateList();
     private readonly StackPanel _editor = new();
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromSeconds(1.5) };
     private QuizQuestion? _current;

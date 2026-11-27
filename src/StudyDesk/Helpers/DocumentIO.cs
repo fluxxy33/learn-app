@@ -32,7 +32,8 @@ public static class DocStyles
             p.FontWeight = FontWeights.Normal;
             p.Foreground = new SolidColorBrush(TextColor);
             p.Margin = new Thickness(0, 0, 0, 10);
-            foreach (var r in p.Inlines.OfType<Run>()) { r.ClearValue(TextElement.FontSizeProperty); r.ClearValue(TextElement.FontWeightProperty); r.ClearValue(TextElement.ForegroundProperty); }
+            // On garde le gras des mots : il sert aux textes à trous
+            foreach (var r in p.Inlines.OfType<Run>()) { r.ClearValue(TextElement.FontSizeProperty); r.ClearValue(TextElement.ForegroundProperty); }
             return;
         }
         p.FontSize = SizeFor(level);

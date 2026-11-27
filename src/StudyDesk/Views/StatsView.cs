@@ -42,7 +42,7 @@ public sealed class StatsView : PageBase
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
         var reviews = s.ReviewsPerDay(30);
-        grid.Children.Add(ChartCard("Révisions par jour", "30 derniers jours", BarChart(reviews, "Accent", d => d.Day.Day == 1 || d.Day.Day % 5 == 0 ? d.Day.ToString("d/MM") : "", d => $"{d.Day.ToString("dddd d MMMM", Fr)} : {Ui.Plural(d.Count, "révision")}")));
+        grid.Children.Add(ChartCard("Révisions par jour", "30 derniers jours", BarChart(reviews, "Accent", d => (DateTime.Today - d.Day).Days % 7 == 0 ? d.Day.ToString("d MMM", Fr) : "", d => $"{d.Day.ToString("dddd d MMMM", Fr)} : {Ui.Plural(d.Count, "révision")}")));
         var forecast = s.Forecast(7);
         var fc = ChartCard("À réviser ces prochains jours", "Prévision des fiches à revoir", BarChart(forecast, "Warn", d => d.Day == DateTime.Today ? "auj." : d.Day.ToString("ddd", Fr), d => $"{d.Day.ToString("dddd d MMMM", Fr)} : {Ui.Plural(d.Count, "fiche")}"));
         Grid.SetColumn(fc, 2);
@@ -174,7 +174,8 @@ public sealed class StatsView : PageBase
             bar.SetResourceReference(Border.BackgroundProperty, d.Count == 0 ? "Line" : colorKey);
             if (i == data.Count - 1 && d.Count > 0) bar.Opacity = 1; else if (d.Count > 0) bar.Opacity = 0.85;
             bars.Children.Add(new Grid { Background = Brushes.Transparent, Children = { bar }, ToolTip = tip(d) });
-            var t = new TextBlock { Text = label(d), FontSize = 10, HorizontalAlignment = HorizontalAlignment.Center };
+            // Le libellé peut dépasser la largeur de sa barre : marges négatives pour ne pas le couper
+            var t = new TextBlock { Text = label(d), FontSize = 10, Width = 60, Margin = new Thickness(-30, 0, -30, 0), TextAlignment = TextAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
             t.SetResourceReference(TextBlock.ForegroundProperty, "FgMuted");
             labels.Children.Add(t);
         }

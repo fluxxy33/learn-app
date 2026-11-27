@@ -18,7 +18,14 @@ public sealed class DeckEditorView : EditorShell, IPage, IEditor
     public string NavKey => "library";
     private readonly LibraryItem _item;
     private readonly Deck _deck;
-    private readonly ListBox _list = new() { BorderThickness = new Thickness(0), Background = Brushes.Transparent, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+    private readonly ListBox _list = CreateList();
+
+    internal static ListBox CreateList()
+    {
+        var l = new ListBox { BorderThickness = new Thickness(0), Background = Brushes.Transparent, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+        ScrollViewer.SetHorizontalScrollBarVisibility(l, ScrollBarVisibility.Disabled);
+        return l;
+    }
     private readonly TextBox _front = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 90, FontSize = 16, Padding = new Thickness(8), VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 220 };
     private readonly TextBox _back = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 120, FontSize = 16, Padding = new Thickness(8), VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 260 };
     private readonly Image _frontImage = new() { MaxHeight = 160, HorizontalAlignment = HorizontalAlignment.Left, Stretch = Stretch.Uniform };
@@ -106,19 +113,16 @@ public sealed class DeckEditorView : EditorShell, IPage, IEditor
         StatusText.Text = Ui.Plural(_deck.Cards.Count, "fiche");
     }
 
-    private DockPanel FaceHeader(string text, StackPanel imageBar, bool front)
+    private StackPanel FaceHeader(string text, StackPanel imageBar, bool front)
     {
-        var dock = new DockPanel { Margin = new Thickness(0, front ? 0 : 18, 0, 6) };
+        var dock = new StackPanel { Margin = new Thickness(0, front ? 0 : 18, 0, 6) };
         imageBar.Children.Add(Ui.Button("Image", (_, _) => PickImage(front), "SubtleButton", Icons.Picture, "Ajouter une image depuis le PC"));
         imageBar.Children.Add(Ui.Button("En ligne", (_, _) => PickOnline(front), "SubtleButton", Icons.Globe, "Image libre de droits"));
         imageBar.Children.Add(Ui.Button("Coller", (_, _) => PasteImage(front), "SubtleButton", Icons.Paste, "Coller une image (capture d'écran)"));
         imageBar.Children.Add(Ui.Button("Retirer", (_, _) => SetImage(front, null), "SubtleButton", Icons.Delete, "Retirer l'image"));
-        imageBar.Margin = new Thickness(0);
-        DockPanel.SetDock(imageBar, Dock.Right);
+        imageBar.Margin = new Thickness(-8, 2, 0, 0);
+        dock.Children.Add(Ui.Text(text, "H3"));
         dock.Children.Add(imageBar);
-        var l = Ui.Text(text, "H3");
-        l.VerticalAlignment = VerticalAlignment.Center;
-        dock.Children.Add(l);
         return dock;
     }
 

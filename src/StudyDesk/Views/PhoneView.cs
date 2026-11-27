@@ -171,7 +171,7 @@ public sealed class PhoneView : PageBase
         }
     }
 
-    private void Start(string? address)
+    internal void Start(string? address)
     {
         PrepareDocuments();
         AppState.StopPhone();

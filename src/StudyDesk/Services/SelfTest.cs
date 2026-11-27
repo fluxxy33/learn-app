@@ -101,6 +101,8 @@ public static class SelfTest
         await Step("15-quiz-editeur", () => { main.GoBack(); ItemActions.Open(quiz); }, main);
         await Step("16-quiz-joueur", () => { main.GoBack(); QuizPlayerView.Start(quiz); }, main);
         await Step("17-telephone", () => { main.GoBack(); main.NavigateTo("phone"); }, main);
+        await Step("17c-telephone-active", () => (main.CurrentPage as PhoneView)?.Start(null), main);
+        AppState.StopPhone();
         await Check("17b-telephone-serveur", async () =>
         {
             var server = new Core.Phone.PhoneServer(store, f => Application.Current.Dispatcher.InvokeAsync(f).Task, "selftest");
@@ -177,7 +179,7 @@ public static class SelfTest
             ctx.DrawRectangle(new VisualBrush(root), null, new Rect(0, 0, root.ActualWidth, root.ActualHeight));
         }
         rtb.Render(dv);
-        var enc = new JpegBitmapEncoder { QualityLevel = 70 };
+        var enc = new JpegBitmapEncoder { QualityLevel = 88 };
         var scale = Math.Min(1.0, 1100 / root.ActualWidth);
         enc.Frames.Add(BitmapFrame.Create(new TransformedBitmap(rtb, new ScaleTransform(scale, scale))));
         using var fs = File.Create(Path.Combine(_out, name + ".jpg"));

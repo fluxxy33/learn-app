@@ -71,6 +71,8 @@ public sealed class LibraryView : UserControl, IPage
         DockPanel.SetDock(actions, Dock.Right);
         head.Children.Add(actions);
         var titles = new StackPanel();
+        _title.TextWrapping = TextWrapping.NoWrap;
+        _title.TextTrimming = TextTrimming.CharacterEllipsis;
         titles.Children.Add(_title);
         _subtitle.Margin = new Thickness(0, 4, 0, 0);
         titles.Children.Add(_subtitle);

@@ -13,18 +13,18 @@ public static class Icons
     public const string Home = "", Library = "", Education = "", Document = "", Page = "",
         Slideshow = "", Cards = "", Quiz = "", Stats = "", Phone = "", Settings = "",
         Add = "", Delete = "", Edit = "", Picture = "", Search = "", Bold = "",
-        Italic = "", Underline = "", Bullets = "", Numbers = "", AlignLeft = "",
+        Italic = "", Underline = "", Bullets = "", Numbers = "", AlignLeft = "",
         AlignCenter = "", AlignRight = "", Undo = "", Redo = "", Font = "",
-        FontColor = "", Highlight = "", Shapes = "", Pen = "", Eraser = "",
-        Table = "", Globe = "", Play = "", Pause = "", Stop = "", Timer = "",
+        FontColor = "", Highlight = "", Shapes = "▭", Pen = "", Eraser = "",
+        Table = "", Globe = "", Play = "", Pause = "", Stop = "", Timer = "",
         Calendar = "", Clock = "", ChevronLeft = "", ChevronRight = "", ChevronDown = "",
         ChevronUp = "", Back = "", Person = "", People = "", Save = "", Folder = "",
         Copy = "", Paste = "", Star = "", StarFill = "", Check = "", Cancel = "",
         Sync = "", QrCode = "", Lightbulb = "", Import = "", Export = "", Share = "",
         More = "", Info = "", Help = "", Link = "", FullScreen = "", Up = "",
         Down = "", Rename = "", MoveTo = "", Dictionary = "", Generate = "",
-        Checklist = "", Flag = "", Refresh = "", Remove = "", Header = "",
-        Wifi = "", Color = "", TextBox = "", Brightness = "", Warning = "",
+        Checklist = "", Flag = "", Refresh = "", Remove = "", Header = "",
+        Wifi = "", Color = "", TextBox = "", Brightness = "", Warning = "",
         History = "", Accept = "", Forward = "\uE72A", Download = "\uE896";
 }
 

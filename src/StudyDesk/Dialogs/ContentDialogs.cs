@@ -252,7 +252,7 @@ public sealed class DrawingDialog : DialogWindow
                  {
                      (Tool.Pen, Icons.Pen, "Crayon"), (Tool.Marker, Icons.Highlight, "Surligneur"), (Tool.Eraser, Icons.Eraser, "Gomme"),
                      (Tool.Line, Icons.Remove, "Ligne"), (Tool.Arrow, Icons.Forward, "Flèche"), (Tool.Rectangle, Icons.Shapes, "Rectangle"),
-                     (Tool.Ellipse, "", "Ellipse"), (Tool.Text, Icons.TextBox, "Texte")
+                     (Tool.Ellipse, "◯", "Ellipse"), (Tool.Text, Icons.TextBox, "Texte")
                  })
         {
             var rb = new RadioButton { Style = Ui.Style("Chip"), Content = Ui.IconText(glyph, name, 13), IsChecked = tool == Tool.Pen, GroupName = "tool", Margin = new Thickness(0, 0, 4, 4) };

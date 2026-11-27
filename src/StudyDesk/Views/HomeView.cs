@@ -28,7 +28,7 @@ public sealed class HomeView : PageBase
         var store = AppState.Store;
         var stats = new StatsCalculator(store);
         var hour = DateTime.Now.Hour;
-        SetTitle((hour < 18 ? "Bonjour " : "Bonsoir ") + store.Profile.Name, Fr.TextInfo.ToTitleCase(DateTime.Now.ToString("dddd d MMMM", Fr)));
+        SetTitle((hour < 18 ? "Bonjour " : "Bonsoir ") + store.Profile.Name, Capitalize(DateTime.Now.ToString("dddd d MMMM", Fr)));
         Body.Children.Clear();
         Actions.Children.Clear();
         var newBtn = Ui.Button("Nouveau", (s, _) => NewMenu((FrameworkElement)s).IsOpen = true, "AccentButton", Icons.Add);
@@ -182,6 +182,8 @@ public sealed class HomeView : PageBase
         tipCard.Margin = new Thickness(0, 14, 0, 0);
         right.Children.Add(tipCard);
     }
+
+    private static string Capitalize(string s) => s.Length == 0 ? s : char.ToUpper(s[0]) + s[1..];
 
     private static string FormatMinutes(int m) => m < 60 ? $"{m} min" : $"{m / 60} h {m % 60:00}";
 
