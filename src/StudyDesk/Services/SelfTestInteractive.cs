@@ -77,6 +77,12 @@ public static class SelfTestInteractive
         var host = stage.Children.OfType<ElementHost>().First(h => h.Element.Type == SlideElementType.Text && h.Element.IsTitle);
         var element = host.Element;
         var x0 = element.X;
+        System.Windows.Input.MouseButtonEventHandler log = (_, a) =>
+        {
+            var pos = a.GetPosition(stage);
+            ElementHost.Diagnostics.Add($"fenêtre : {a.OriginalSource?.GetType().Name} à ({pos.X:0},{pos.Y:0}) n°{a.ClickCount} capture={Mouse.Captured?.GetType().Name}");
+        };
+        main.AddHandler(UIElement.PreviewMouseLeftButtonDownEvent, log, true);
 
         // 1) clic : sélection
         var center = host.PointToScreen(new Point(host.ActualWidth / 2, host.ActualHeight / 2));
@@ -97,6 +103,7 @@ public static class SelfTestInteractive
         // 3) double-clic : édition du texte, puis frappe au clavier
         host = stage.Children.OfType<ElementHost>().First(h => h.Element == element);
         center = host.PointToScreen(new Point(host.ActualWidth / 2, host.ActualHeight / 2));
+        ElementHost.Diagnostics.Add($"cible : élément X={element.X:0} Y={element.Y:0} L={element.Width:0} H={element.Height:0}, hôte chargé={host.IsLoaded} taille={host.ActualWidth:0}x{host.ActualHeight:0}, écran=({center.X:0},{center.Y:0})");
         MoveTo(center);
         mouse_event(LeftDown, 0, 0, 0, UIntPtr.Zero); mouse_event(LeftUp, 0, 0, 0, UIntPtr.Zero);
         await Task.Delay(60);
