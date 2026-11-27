@@ -181,7 +181,8 @@ public static class DocumentIO
         FontSize = s.DefaultFontSize,
         Foreground = new SolidColorBrush(DocStyles.TextColor),
         PagePadding = new Thickness(0),
-        LineHeight = double.NaN
+        LineHeight = double.NaN,
+        TextAlignment = TextAlignment.Left
     };
 
     public static FlowDocument Load(ProfileStore store, LibraryItem item)

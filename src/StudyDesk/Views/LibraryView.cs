@@ -21,7 +21,7 @@ public sealed class LibraryView : UserControl, IPage
 
     private readonly StackPanel _subjects = new();
     private readonly StackPanel _items = new();
-    private readonly TextBox _search = new() { Padding = new Thickness(8, 6, 8, 6), MinWidth = 220 };
+    private readonly TextBox _search = new() { Padding = new Thickness(8, 6, 8, 6), MinWidth = 190 };
     private readonly TextBlock _title = Ui.Text("", "H1");
     private readonly TextBlock _subtitle = Ui.Text("", "Muted");
     private readonly WrapPanel _filters = new() { Margin = new Thickness(0, 14, 0, 14) };
@@ -72,6 +72,7 @@ public sealed class LibraryView : UserControl, IPage
         head.Children.Add(actions);
         var titles = new StackPanel();
         _title.TextWrapping = TextWrapping.NoWrap;
+        _title.FontSize = 24;
         _title.TextTrimming = TextTrimming.CharacterEllipsis;
         titles.Children.Add(_title);
         _subtitle.Margin = new Thickness(0, 4, 0, 0);
