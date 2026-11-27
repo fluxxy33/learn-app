@@ -14,7 +14,7 @@ Pour les collégiens, les lycéens et les étudiants · 100 % gratuit · Fonctio
 
 ### [⬇️ Télécharger StudyDesk pour Windows](https://github.com/fluxxy33/learn-app/releases/latest/download/StudyDesk.exe)
 
-<sub>Un seul fichier, environ 60 Mo, rien à installer</sub>
+<sub>Un seul fichier de 65 Mo, rien à installer</sub>
 
 <br>
 
@@ -173,4 +173,4 @@ dotnet test                              # tests
 dotnet run --project src/StudyDesk       # lancer l'application (Windows)
 ```
 
-À chaque envoi de code, GitHub Actions lance les tests, crée `StudyDesk.exe` et exécute `StudyDesk.exe --selftest`, qui ouvre chaque écran, fait des captures et vérifie l'enregistrement des documents ainsi que le serveur du téléphone. Pour publier une nouvelle version, crée un tag `vX.Y.Z` : l'exécutable est alors ajouté automatiquement aux [Releases](https://github.com/fluxxy33/learn-app/releases).
+À chaque envoi de code, GitHub Actions lance les tests, crée `StudyDesk.exe` et exécute `StudyDesk.exe --selftest`, qui ouvre chaque écran, fait des captures et vérifie l'enregistrement des documents ainsi que le serveur du téléphone. Pour publier une nouvelle version : onglet **Actions › Compiler StudyDesk › Run workflow**, puis indique un numéro de version (par exemple `v1.1.0`). Pousser un tag `vX.Y.Z` fonctionne aussi. L'exécutable est alors ajouté automatiquement aux [Releases](https://github.com/fluxxy33/learn-app/releases).
