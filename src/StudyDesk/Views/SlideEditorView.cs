@@ -589,13 +589,28 @@ public sealed class SlideEditorView : EditorShell, IPage, IEditor
 
     // ---------------------------------------------- Panneau de propriétés
 
+    private TextBox? _propText;
+
+    /// <summary>Place le curseur dans le champ « Texte » de l'élément sélectionné.</summary>
+    internal void FocusTextProperty()
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_propText == null) return;
+            _propText.Focus();
+            Keyboard.Focus(_propText);
+            _propText.SelectAll();
+        }, DispatcherPriority.Input);
+    }
+
     private void ShowProps()
     {
         _props.Children.Clear();
+        _propText = null;
         if (_selected == null)
         {
             _props.Children.Add(Ui.Text("Diapositive " + (_slideIndex + 1), "H3"));
-            var hint = Ui.Text("Clique sur un élément pour le modifier. Double-clique sur un texte pour l'écrire. Fais glisser pour déplacer, et utilise la poignée en bas à droite pour redimensionner.", "Muted");
+            var hint = Ui.Text("Clique sur un élément pour le modifier. Double-clique sur un texte pour l'écrire dans le champ « Texte » de ce panneau. Fais glisser pour déplacer, et utilise la poignée en bas à droite pour redimensionner.", "Muted");
             hint.Margin = new Thickness(0, 6, 0, 14);
             _props.Children.Add(hint);
             _props.Children.Add(Ui.Text("Thème : " + Theme.Name, "Muted"));
@@ -617,6 +632,7 @@ public sealed class SlideEditorView : EditorShell, IPage, IEditor
         {
             _props.Children.Add(PropLabel("Texte"));
             var text = new TextBox { Text = e.Text, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 80, MaxHeight = 200, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(6) };
+            _propText = text;
             text.GotKeyboardFocus += (_, _) => PushUndo();
             text.TextChanged += (_, _) => { e.Text = text.Text; Changed(false); RenderStageSoon(); };
             _props.Children.Add(text);
@@ -889,50 +905,11 @@ internal sealed class ElementHost : Grid
         if (_moved) _editor.EndChange();
     }
 
-    /// <summary>Édition du texte directement sur la diapositive.</summary>
+    /// <summary>Double-clic sur un texte : on l'écrit dans le panneau de droite, la diapositive se met à jour en direct.</summary>
     public void StartEditing()
     {
         if (Element.Type != SlideElementType.Text) return;
         _editor.Select(Element);
-        var host = _editor.HostFor(Element) ?? this;
-        host.ShowEditor();
-    }
-
-    private void ShowEditor()
-    {
-        var e = Element;
-        var theme = _editor.ThemeForHosts;
-        var box = new TextBox
-        {
-            Text = e.Text, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, FontSize = e.FontSize,
-            FontFamily = new FontFamily(e.IsTitle ? theme.TitleFont : theme.TextFont),
-            FontWeight = e.Bold || e.IsTitle ? FontWeights.SemiBold : FontWeights.Normal,
-            Foreground = Ui.BrushFromHex(e.ColorHex ?? (e.IsTitle ? theme.TitleColor : theme.TextColor)),
-            Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)), BorderThickness = new Thickness(0), Padding = new Thickness(0),
-            CaretBrush = Ui.BrushFromHex(e.ColorHex ?? theme.TextColor),
-            TextAlignment = e.Align switch { TextAlign.Center => TextAlignment.Center, TextAlign.Right => TextAlignment.Right, _ => TextAlignment.Left },
-            Cursor = Cursors.IBeam
-        };
-        box.Template = (ControlTemplate)System.Windows.Markup.XamlReader.Parse(
-            "<ControlTemplate TargetType=\"TextBox\" xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">" +
-            "<Border Background=\"{TemplateBinding Background}\"><ScrollViewer x:Name=\"PART_ContentHost\" Focusable=\"False\" /></Border></ControlTemplate>");
-        Children.Insert(1, box);
-        Children.RemoveAt(0);
-        _editor.BeginChange();
-        void FocusBox()
-        {
-            box.Focus();
-            Keyboard.Focus(box);
-            box.SelectAll();
-        }
-        box.Loaded += (_, _) => Dispatcher.BeginInvoke(FocusBox, System.Windows.Threading.DispatcherPriority.Input);
-        // Le texte est enregistré à chaque frappe
-        box.TextChanged += (_, _) => e.Text = box.Text;
-        box.LostKeyboardFocus += (_, _) =>
-        {
-            e.Text = box.Text;
-            _editor.EndChange();
-        };
-        box.PreviewKeyDown += (_, k) => { if (k.Key == Key.Escape) { Keyboard.ClearFocus(); _editor.Focus(); k.Handled = true; } };
+        _editor.FocusTextProperty();
     }
 }
