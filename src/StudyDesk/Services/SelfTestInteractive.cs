@@ -89,10 +89,10 @@ public static class SelfTestInteractive
         if (!MoveTo(center)) return "IGNORÉ (pas de souris disponible)";
         mouse_event(LeftDown, 0, 0, 0, UIntPtr.Zero);
         await Pause(100);
-        // 2) glisser de 150 pixels écran vers la droite
-        for (int i = 1; i <= 10; i++)
+        // 2) glisser de 40 pixels écran vers la droite (le titre reste dans la diapositive)
+        for (int i = 1; i <= 8; i++)
         {
-            MoveTo(new Point(center.X + i * 15, center.Y));
+            MoveTo(new Point(center.X + i * 5, center.Y));
             mouse_event(0x0001, 0, 0, 0, UIntPtr.Zero); // MOUSEEVENTF_MOVE
             await Pause(30);
         }

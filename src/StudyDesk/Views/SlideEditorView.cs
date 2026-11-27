@@ -596,12 +596,11 @@ public sealed class SlideEditorView : EditorShell, IPage, IEditor
     {
         Dispatcher.BeginInvoke(() =>
         {
-            if (_propText == null) { ElementHost.Diagnostics.Add("pas de champ Texte"); return; }
+            if (_propText == null) return;
             var ok = _propText.Focus();
             Keyboard.Focus(_propText);
             _propText.SelectAll();
-            ElementHost.Diagnostics.Add($"focus champ Texte : {ok}, focus réel : {Keyboard.FocusedElement?.GetType().Name}");
-            _propText.LostKeyboardFocus += (_, a) => ElementHost.Diagnostics.Add($"champ Texte perd le focus vers {a.NewFocus?.GetType().Name}");
+            if (AppState.SelfTest) ElementHost.Diagnostics.Add($"focus champ Texte : {ok}, focus réel : {Keyboard.FocusedElement?.GetType().Name}");
         }, DispatcherPriority.Input);
     }
 
@@ -827,7 +826,7 @@ internal sealed class ElementHost : Grid
                 ev.Handled = true;
                 return;
             }
-            Diagnostics.Add($"clic n°{ev.ClickCount} (sélectionné : {selected})");
+            if (AppState.SelfTest) Diagnostics.Add($"clic n°{ev.ClickCount} (sélectionné : {selected})");
             if (ev.ClickCount == 2 && e.Type == SlideElementType.Text) { StartEditing(); ev.Handled = true; return; }
             if (!selected)
             {
