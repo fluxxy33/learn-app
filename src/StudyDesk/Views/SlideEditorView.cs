@@ -919,7 +919,15 @@ internal sealed class ElementHost : Grid
         Children.Insert(1, box);
         Children.RemoveAt(0);
         _editor.BeginChange();
-        box.Loaded += (_, _) => { box.Focus(); box.SelectAll(); };
+        void FocusBox()
+        {
+            box.Focus();
+            Keyboard.Focus(box);
+            box.SelectAll();
+        }
+        box.Loaded += (_, _) => Dispatcher.BeginInvoke(FocusBox, System.Windows.Threading.DispatcherPriority.Input);
+        // Le texte est enregistré à chaque frappe
+        box.TextChanged += (_, _) => e.Text = box.Text;
         box.LostKeyboardFocus += (_, _) =>
         {
             e.Text = box.Text;

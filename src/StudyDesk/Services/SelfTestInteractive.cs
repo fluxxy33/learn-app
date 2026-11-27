@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Input;
 using StudyDesk.Core.Models;
 using StudyDesk.Core.Services;
 using StudyDesk.Dialogs;
@@ -100,11 +101,12 @@ public static class SelfTestInteractive
         mouse_event(LeftDown, 0, 0, 0, UIntPtr.Zero); mouse_event(LeftUp, 0, 0, 0, UIntPtr.Zero);
         await Task.Delay(60);
         mouse_event(LeftDown, 0, 0, 0, UIntPtr.Zero); mouse_event(LeftUp, 0, 0, 0, UIntPtr.Zero);
-        await Pause(400);
+        await Pause(700);
+        var focused = Keyboard.FocusedElement?.GetType().Name ?? "rien";
         await Type("TEST");
         await Key(0x1B); // Échap : fin de l'édition
         await Pause(300);
-        if (!element.Text.Contains("TEST", StringComparison.OrdinalIgnoreCase)) throw new Exception("Le texte tapé au clavier n'a pas été enregistré : « " + element.Text + " »");
+        if (!element.Text.Contains("TEST", StringComparison.OrdinalIgnoreCase)) throw new Exception($"Le texte tapé au clavier n'a pas été enregistré : « {element.Text} » (focus : {focused}, éditeur ouvert : {stage.Children.OfType<ElementHost>().Any(h => h.Children.OfType<TextBox>().Any())})");
 
         // 4) actions du ruban : nouvelle diapositive, zone de texte, forme, annuler
         var before = AppState.Store.LoadSlideshow(show.Id).Slides.Count;
