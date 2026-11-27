@@ -286,8 +286,9 @@ public sealed class DocumentEditorView : EditorShell, IPage, IEditor
         _autosave.Start();
         Unloaded += (_, _) => _autosave.Stop();
         Loaded += (_, _) => { _autosave.Start(); _rtb.Focus(); UpdateToolbar(); UpdateWordCount(); };
-        _dirty = false;
-        StatusText.Text = "Enregistré";
+        // Un document créé à partir d'un modèle n'a pas encore de fichier : on l'enregistre au premier départ
+        _dirty = !File.Exists(AppState.Store.ContentPath(item));
+        StatusText.Text = _dirty ? "Nouveau document" : "Enregistré";
     }
 
     public void OnLeave()
