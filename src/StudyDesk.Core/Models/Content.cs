@@ -141,6 +141,8 @@ public sealed class SlideElement
     public double Y { get; set; }
     public double Width { get; set; } = 400;
     public double Height { get; set; } = 120;
+    /// <summary>Rotation en degrés (utile pour orienter une flèche).</summary>
+    public double Rotation { get; set; }
 
     public string Text { get; set; } = "";
     public double FontSize { get; set; } = 28;

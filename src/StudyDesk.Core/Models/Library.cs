@@ -78,6 +78,8 @@ public sealed class ProfileSettings
     public int PomodoroLongBreakMinutes { get; set; } = 15;
     public int NewCardsPerDay { get; set; } = 20;
     public int PhonePort { get; set; } = 8765;
+    /// <summary>Jeton d'accès de l'app téléphone (gardé pour que les fichiers hors ligne puissent se synchroniser plus tard).</summary>
+    public string? PhoneToken { get; set; }
     public string DefaultFontFamily { get; set; } = "Segoe UI";
     public double DefaultFontSize { get; set; } = 15;
 }
