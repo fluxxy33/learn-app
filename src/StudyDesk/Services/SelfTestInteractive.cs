@@ -32,7 +32,10 @@ public static class SelfTestInteractive
         (T)o.GetType().GetField(field, BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(o)!;
 
     private static object? Call(object o, string method, params object?[] args) =>
-        o.GetType().GetMethod(method, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public)!.Invoke(o, args);
+        o.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+            .First(m => m.Name == method && m.GetParameters().Length == args.Length &&
+                        m.GetParameters().Select((p, i) => args[i] == null || p.ParameterType.IsInstanceOfType(args[i])).All(x => x))
+            .Invoke(o, args);
 
     private static bool MoveTo(Point screen)
     {
