@@ -1,0 +1,101 @@
+name: Compiler StudyDesk
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Numéro de version à publier (ex. v1.0.0). Laisser vide pour une simple compilation."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Tests
+        run: dotnet test tests/StudyDesk.Tests/StudyDesk.Tests.csproj -c Release
+
+      - name: Créer le .exe (Windows 64 bits, sans installation de .NET)
+        run: >
+          dotnet publish src/StudyDesk/StudyDesk.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+          -p:DebugType=None -o publish
+
+      - name: Autotest de l'application
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP "selftest"
+          $env:STUDYDESK_SELFTEST_OUT = $out
+          $p = Start-Process -FilePath "publish\StudyDesk.exe" -ArgumentList "--selftest" -PassThru
+          if (-not $p.WaitForExit(300000)) { $p.Kill(); Write-Error "L'autotest n'a pas terminé à temps"; exit 1 }
+          Write-Host "Code de sortie : $($p.ExitCode)"
+          if (Test-Path "$out\report.txt") { Get-Content "$out\report.txt" } else { Write-Host "Pas de rapport" }
+          $log = Join-Path $env:APPDATA "StudyDesk\erreurs.log"
+          Get-ChildItem $env:TEMP -Filter "StudyDesk-selftest-*" -Directory | ForEach-Object {
+            $e = Join-Path $_.FullName "erreurs.log"; if (Test-Path $e) { Write-Host "---- erreurs.log"; Get-Content $e }
+          }
+          New-Item -ItemType Directory -Force -Path selftest | Out-Null
+          if (Test-Path $out) { Copy-Item "$out\*" selftest -Recurse }
+          exit $p.ExitCode
+
+      - name: Captures d'écran (base64)
+        if: always()
+        shell: pwsh
+        run: |
+          Get-ChildItem selftest -Filter *.jpg -ErrorAction SilentlyContinue | Sort-Object Name | ForEach-Object {
+            Write-Host "===SHOT $($_.Name)==="
+            [Convert]::ToBase64String([IO.File]::ReadAllBytes($_.FullName)) -split '(.{4000})' | Where-Object { $_ } | ForEach-Object { Write-Host $_ }
+            Write-Host "===END==="
+          }
+
+      - name: Préparer le zip
+        shell: pwsh
+        run: |
+          Copy-Item README.md publish\LISEZMOI.md
+          Compress-Archive -Path publish\* -DestinationPath StudyDesk-windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StudyDesk-windows
+          path: publish/
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: autotest
+          path: selftest/
+
+      - name: Publier la version
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.version != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version != '' && inputs.version || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: StudyDesk ${{ inputs.version != '' && inputs.version || github.ref_name }}
+          make_latest: true
+          body: |
+            ## Installer StudyDesk
+
+            1. Télécharge **StudyDesk.exe** ci-dessous.
+            2. Double-clique dessus. Si Windows affiche « Windows a protégé votre ordinateur », clique sur **Informations complémentaires** puis **Exécuter quand même**.
+            3. Écris ton prénom : c'est prêt !
+
+            Rien à installer : .NET est inclus. Windows 10 ou 11, 64 bits.
+            `StudyDesk-windows.zip` contient le même programme, avec le mode d'emploi.
+          files: |
+            StudyDesk-windows.zip
+            publish/StudyDesk.exe

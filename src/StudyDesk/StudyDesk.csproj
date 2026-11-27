@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <RootNamespace>StudyDesk</RootNamespace>
+    <AssemblyName>StudyDesk</AssemblyName>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <Product>StudyDesk</Product>
+    <Version>1.0.0</Version>
+    <Description>Créer ses cours, ses diaporamas, ses fiches et ses quiz, et réviser au bon moment.</Description>
+    <!-- Le thème Fluent de WPF est marqué expérimental -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\StudyDesk.Core\StudyDesk.Core.csproj" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\logo.png" />
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/StudyDesk.Core/StudyDesk.Core.csproj" />
+    <Project Path="src/StudyDesk/StudyDesk.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/StudyDesk.Tests/StudyDesk.Tests.csproj" />
+  </Folder>
+</Solution>
