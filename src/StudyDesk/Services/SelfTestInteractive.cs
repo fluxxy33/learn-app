@@ -106,7 +106,7 @@ public static class SelfTestInteractive
         await Type("TEST");
         await Key(0x1B); // Échap : fin de l'édition
         await Pause(300);
-        if (!element.Text.Contains("TEST", StringComparison.OrdinalIgnoreCase)) throw new Exception($"Le texte tapé au clavier n'a pas été enregistré : « {element.Text} » (focus : {focused}, sélection : {Get<SlideElement?>(editor, "_selected")?.Text ?? "aucune"})");
+        if (!element.Text.Contains("TEST", StringComparison.OrdinalIgnoreCase)) throw new Exception($"Le texte tapé au clavier n'a pas été enregistré : « {element.Text} » (focus : {focused}, sélection : {Get<SlideElement?>(editor, "_selected")?.Text ?? "aucune"}, journal : {string.Join(" | ", ElementHost.Diagnostics)})");
 
         // 4) actions du ruban : nouvelle diapositive, zone de texte, forme, annuler
         var before = AppState.Store.LoadSlideshow(show.Id).Slides.Count;
