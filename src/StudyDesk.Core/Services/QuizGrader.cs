@@ -107,6 +107,59 @@ public static partial class QuizGrader
         return ok / (double)q.Pairs.Count;
     }
 
+    /// <summary>order = éléments dans l'ordre choisi par l'élève. Un point par élément bien placé.</summary>
+    public static double GradeOrdering(QuizQuestion q, IReadOnlyList<string> order)
+    {
+        var items = q.Items.Where(i => i.Trim().Length > 0).ToList();
+        if (items.Count == 0) return 0;
+        int ok = 0;
+        for (int i = 0; i < items.Count; i++)
+            if (i < order.Count && Normalize(order[i]) == Normalize(items[i])) ok++;
+        return ok / (double)items.Count;
+    }
+
+    public static List<string> Categories(QuizQuestion q) =>
+        q.Pairs.Select(p => p.Right.Trim()).Where(c => c.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+    /// <summary>chosen[i] = catégorie choisie pour l'élément i.</summary>
+    public static double GradeCategorize(QuizQuestion q, IReadOnlyList<string?> chosen)
+    {
+        if (q.Pairs.Count == 0) return 0;
+        int ok = 0;
+        for (int i = 0; i < q.Pairs.Count; i++)
+            if (i < chosen.Count && chosen[i] != null && Normalize(chosen[i]!) == Normalize(q.Pairs[i].Right)) ok++;
+        return ok / (double)q.Pairs.Count;
+    }
+
+    public static bool TryParseNumber(string s, out double value)
+    {
+        s = (s ?? "").Trim().Replace(" ", "").Replace("\u00A0", "").Replace(',', '.');
+        s = Regex.Replace(s, @"[^\d.\-eE+]+$", ""); // enlève une unité tapée à la fin
+        return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+    }
+
+    public static double GradeNumeric(QuizQuestion q, string input)
+    {
+        if (!TryParseNumber(input, out var v)) return 0;
+        var tol = Math.Max(Math.Abs(q.Tolerance), 1e-9);
+        return Math.Abs(v - q.NumericAnswer) <= tol ? 1 : 0;
+    }
+
+    public static List<string> Words(string sentence) =>
+        Regex.Split((sentence ?? "").Trim(), @"\s+").Where(w => w.Length > 0).ToList();
+
+    /// <summary>Un point si toute la phrase est dans le bon ordre, sinon la part de mots bien placés (divisée par deux).</summary>
+    public static double GradeWordOrder(QuizQuestion q, IReadOnlyList<string> words)
+    {
+        var expected = Words(q.Sentence);
+        if (expected.Count == 0) return 0;
+        if (words.Count == expected.Count && expected.Select((w, i) => Normalize(w) == Normalize(words[i])).All(x => x)) return 1;
+        int ok = expected.Where((w, i) => i < words.Count && Normalize(w) == Normalize(words[i])).Count();
+        return ok / (double)expected.Count / 2;
+    }
+
+    public static string FormatNumber(double v) => v.ToString("0.######", CultureInfo.GetCultureInfo("fr-FR"));
+
     /// <summary>Texte de la bonne réponse, pour l'affichage après correction.</summary>
     public static string CorrectAnswerText(QuizQuestion q) => q.Type switch
     {
@@ -115,6 +168,10 @@ public static partial class QuizGrader
         QuestionType.ShortAnswer => q.AcceptedAnswers.FirstOrDefault() ?? "",
         QuestionType.FillBlanks => string.Concat(ParseCloze(q.ClozeText).Select(p => p.Text ?? p.Answers![0])),
         QuestionType.Matching => string.Join(" ; ", q.Pairs.Select(p => $"{p.Left} → {p.Right}")),
+        QuestionType.Ordering => string.Join(" → ", q.Items.Where(i => i.Trim().Length > 0)),
+        QuestionType.Categorize => string.Join(" ; ", Categories(q).Select(c => c + " : " + string.Join(", ", q.Pairs.Where(p => string.Equals(p.Right.Trim(), c, StringComparison.OrdinalIgnoreCase)).Select(p => p.Left)))),
+        QuestionType.Numeric => FormatNumber(q.NumericAnswer) + (q.Unit.Length > 0 ? " " + q.Unit : "") + (q.Tolerance > 0 ? $" (± {FormatNumber(q.Tolerance)})" : ""),
+        QuestionType.WordOrder => q.Sentence.Trim(),
         _ => ""
     };
 
@@ -129,6 +186,10 @@ public static partial class QuizGrader
             QuestionType.ShortAnswer when !q.AcceptedAnswers.Any(a => !string.IsNullOrWhiteSpace(a)) => "Ajoute au moins une réponse acceptée.",
             QuestionType.FillBlanks when BlankCount(q.ClozeText) == 0 => "Mets au moins un mot entre crochets, par exemple [Paris].",
             QuestionType.Matching when q.Pairs.Count(p => p.Left.Length > 0 && p.Right.Length > 0) < 2 => "Il faut au moins deux paires complètes.",
+            QuestionType.Ordering when q.Items.Count(i => i.Trim().Length > 0) < 2 => "Il faut au moins deux éléments à remettre dans l'ordre.",
+            QuestionType.Categorize when q.Pairs.Count(p => p.Left.Trim().Length > 0 && p.Right.Trim().Length > 0) < 2 => "Il faut au moins deux éléments avec leur catégorie.",
+            QuestionType.Categorize when Categories(q).Count < 2 => "Il faut au moins deux catégories différentes.",
+            QuestionType.WordOrder when Words(q.Sentence).Count < 3 => "Écris une phrase d'au moins trois mots.",
             _ => null
         };
     }

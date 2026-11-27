@@ -44,6 +44,7 @@ public static class PhonePayload
                 return new
                 {
                     id = i.Id, title = i.Title, subjectId = i.SubjectId, chapterId = i.ChapterId, shuffle = q.ShuffleQuestions,
+                    secondsPerQuestion = q.SecondsPerQuestion, examMode = q.ExamMode,
                     questions = q.Questions.Where(x => QuizGrader.Validate(x) == null).Select(x => new
                     {
                         id = x.Id, type = x.Type.ToString(), prompt = x.Prompt, image = x.Image, explanation = x.Explanation,
@@ -51,7 +52,12 @@ public static class PhonePayload
                         correctBool = x.CorrectBool,
                         accepted = x.AcceptedAnswers.Where(a => a.Trim().Length > 0),
                         cloze = QuizGrader.ParseCloze(x.ClozeText).Select(p => new { text = p.Text, answers = p.Answers }),
-                        pairs = x.Pairs.Where(p => p.Left.Length > 0 && p.Right.Length > 0).Select(p => new { left = p.Left, right = p.Right })
+                        pairs = x.Pairs.Where(p => p.Left.Length > 0 && p.Right.Length > 0).Select(p => new { left = p.Left, right = p.Right }),
+                        items = x.Items.Where(t => t.Trim().Length > 0),
+                        categories = QuizGrader.Categories(x),
+                        numericAnswer = x.NumericAnswer, tolerance = x.Tolerance, unit = x.Unit,
+                        words = QuizGrader.Words(x.Sentence),
+                        answerText = QuizGrader.CorrectAnswerText(x)
                     })
                 };
             }),

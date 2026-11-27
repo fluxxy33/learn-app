@@ -37,7 +37,15 @@ public enum QuestionType
     TrueFalse,
     FillBlanks,
     ShortAnswer,
-    Matching
+    Matching,
+    /// <summary>Remettre des éléments dans l'ordre (chronologie, étapes…).</summary>
+    Ordering,
+    /// <summary>Classer des éléments dans des catégories (Pairs : Left = élément, Right = catégorie).</summary>
+    Categorize,
+    /// <summary>Réponse numérique avec tolérance et unité.</summary>
+    Numeric,
+    /// <summary>Remettre les mots d'une phrase dans l'ordre.</summary>
+    WordOrder
 }
 
 public sealed class Quiz
@@ -45,6 +53,10 @@ public sealed class Quiz
     public string Id { get; set; } = "";
     public List<QuizQuestion> Questions { get; set; } = new();
     public bool ShuffleQuestions { get; set; } = true;
+    /// <summary>Temps par question en secondes (0 = pas de chrono).</summary>
+    public int SecondsPerQuestion { get; set; }
+    /// <summary>Mode examen : pas de correction avant la fin.</summary>
+    public bool ExamMode { get; set; }
 }
 
 public sealed class QuizChoice
@@ -75,8 +87,16 @@ public sealed class QuizQuestion
     public List<string> AcceptedAnswers { get; set; } = new();
     /// <summary>Texte à trous : les mots entre crochets sont à trouver. Ex : « La capitale est [Paris]. »</summary>
     public string ClozeText { get; set; } = "";
-    /// <summary>Relier : paires gauche / droite.</summary>
+    /// <summary>Relier : paires gauche / droite. Classer : élément / catégorie.</summary>
     public List<MatchPair> Pairs { get; set; } = new();
+    /// <summary>Remettre dans l'ordre : éléments dans le bon ordre.</summary>
+    public List<string> Items { get; set; } = new();
+    /// <summary>Réponse numérique.</summary>
+    public double NumericAnswer { get; set; }
+    public double Tolerance { get; set; }
+    public string Unit { get; set; } = "";
+    /// <summary>Remettre les mots dans l'ordre : la phrase correcte.</summary>
+    public string Sentence { get; set; } = "";
 }
 
 // ---------------------------------------------------------------- Diaporamas

@@ -93,6 +93,8 @@ public sealed class Library
     public List<Exam> Exams { get; set; } = new();
     public ProfileSettings Settings { get; set; } = new();
     public HashSet<string> CompletedTutorials { get; set; } = new();
+    /// <summary>Contenus du catalogue déjà ajoutés.</summary>
+    public HashSet<string> ImportedPacks { get; set; } = new();
 }
 
 public static class NewId

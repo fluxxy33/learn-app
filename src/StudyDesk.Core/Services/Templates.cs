@@ -18,6 +18,12 @@ public static class Templates
         new DocTemplate("commentaire", "Commentaire de texte", "Présentation du texte, axes de lecture, conclusion.", Commentaire),
         new DocTemplate("tp", "Compte rendu de TP", "Objectif, matériel, protocole, résultats, conclusion.", CompteRenduTp),
         new DocTemplate("expose", "Préparer un exposé", "Le plan et les notes de ton exposé avant de faire le diaporama.", PreparationExpose),
+        new DocTemplate("lecture", "Fiche de lecture", "Auteur, résumé, personnages, thèmes et ton avis sur un livre.", FicheLecture),
+        new DocTemplate("carte", "Carte mentale (plan)", "Le sujet au centre, les grandes idées et leurs détails.", CarteMentale),
+        new DocTemplate("methode", "Fiche méthode", "Les étapes pour réussir un type d'exercice, avec un exemple corrigé.", FicheMethode),
+        new DocTemplate("planning", "Planning de révisions", "Les chapitres à revoir semaine par semaine avant un examen.", PlanningRevisions),
+        new DocTemplate("vocabulaire", "Liste de vocabulaire", "Mot : traduction, prête à être transformée en fiches.", ListeVocabulaire),
+        new DocTemplate("oral", "Grand oral / oral du brevet", "Question, plan, arguments et préparation des questions du jury.", GrandOral),
     };
 
     public const string FicheDeCours = """
@@ -186,6 +192,160 @@ La question à laquelle l'exposé répond.
 
 - Livre ou manuel
 - Site web (adresse, date de consultation)
+""";
+
+    public const string FicheLecture = """
+# Titre du livre — Auteur
+
+> Genre : roman, théâtre, poésie… · Année de publication · Nombre de pages
+
+## L'auteur
+
+Quelques lignes sur l'auteur et l'époque où il a écrit.
+
+## Résumé
+
+Raconte l'histoire en 5 à 10 lignes : situation initiale, élément déclencheur, péripéties, dénouement.
+
+## Personnages principaux
+
+Personnage 1 : qui il est, ce qu'il veut.
+
+Personnage 2 : qui il est, son rôle dans l'histoire.
+
+## Thèmes
+
+- Thème 1 (l'amitié, la guerre, la liberté…)
+- Thème 2
+
+## Un passage marquant
+
+Recopie une citation entre guillemets et explique pourquoi elle t'a marqué.
+
+## Mon avis
+
+J'ai aimé / je n'ai pas aimé parce que…
+""";
+
+    public const string CarteMentale = """
+# Sujet central
+
+> Écris le sujet au centre, puis une branche par grande idée. Garde des mots-clés courts.
+
+## Branche 1 : première idée
+
+- détail
+- exemple
+
+## Branche 2 : deuxième idée
+
+- détail
+- exemple
+
+## Branche 3 : troisième idée
+
+- détail
+- exemple
+
+## Liens entre les branches
+
+Quelles idées se répondent ? Note-les ici.
+""";
+
+    public const string FicheMethode = """
+# Méthode : nom de l'exercice
+
+> Quand l'utiliser : dans quel type de question ou d'exercice.
+
+## Les étapes
+
+1. Lire l'énoncé et repérer les mots-clés
+2. Première étape
+3. Deuxième étape
+4. Vérifier son résultat
+
+## Les pièges à éviter
+
+- Piège 1
+- Piège 2
+
+## Exemple corrigé
+
+Énoncé, puis la solution rédigée étape par étape.
+""";
+
+    public const string PlanningRevisions = """
+# Planning de révisions — examen du …
+
+> Objectif : tout revoir une fois, puis s'entraîner sur des sujets la dernière semaine.
+
+## Semaine 1
+
+- Maths : chapitres …
+- Français : …
+- Histoire-géo : …
+
+## Semaine 2
+
+- Sciences : …
+- Langues : …
+
+## Semaine 3
+
+- Révision des fiches difficiles
+- Quiz de toutes les matières
+
+## Dernière semaine
+
+- Sujets d'entraînement en conditions réelles
+- Relecture des fiches « À retenir »
+- Bien dormir la veille !
+""";
+
+    public const string ListeVocabulaire = """
+# Vocabulaire : thème
+
+> Une ligne par mot, au format « mot : traduction ». Ensuite : Réviser › Créer des fiches.
+
+the weather : la météo
+
+to borrow : emprunter
+
+a library : une bibliothèque
+
+actually : en fait
+""";
+
+    public const string GrandOral = """
+# Grand oral : ma question
+
+> 5 min de présentation, puis 10 min d'échange avec le jury.
+
+## Pourquoi cette question ?
+
+Ce qui m'a donné envie de la traiter, en lien avec mes spécialités et mon projet.
+
+## Plan de la présentation
+
+1. Introduction : accroche et question
+2. Première partie
+3. Deuxième partie
+4. Conclusion : réponse et ouverture
+
+## Arguments et exemples
+
+**Argument 1** : explication et exemple précis.
+
+**Argument 2** : explication et exemple précis.
+
+## Questions que le jury pourrait poser
+
+- Question possible 1 ? Ma réponse.
+- Question possible 2 ? Ma réponse.
+
+## Mon projet d'orientation
+
+Le lien entre cette question et ce que je veux faire plus tard.
 """;
 
     public const string PythagoreExample = """

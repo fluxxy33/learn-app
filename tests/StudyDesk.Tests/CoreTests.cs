@@ -322,3 +322,82 @@ public class PhoneTests
         Assert.Contains("Introduction", await http.GetStringAsync($"/api/doc/{showId}?t=abc"));
     }
 }
+
+public class V11Tests
+{
+    [Fact]
+    public void New_Question_Types_Grade()
+    {
+        var ord = new QuizQuestion { Type = QuestionType.Ordering, Items = { "a", "b", "c", "d" } };
+        Assert.Equal(1, QuizGrader.GradeOrdering(ord, new[] { "a", "b", "c", "d" }));
+        Assert.Equal(0.5, QuizGrader.GradeOrdering(ord, new[] { "a", "b", "d", "c" }));
+
+        var cat = new QuizQuestion { Type = QuestionType.Categorize, Pairs = { new() { Left = "chat", Right = "Nom" }, new() { Left = "vite", Right = "Adverbe" } } };
+        Assert.Equal(new[] { "Nom", "Adverbe" }, QuizGrader.Categories(cat));
+        Assert.Equal(1, QuizGrader.GradeCategorize(cat, new[] { "nom", "Adverbe" }));
+        Assert.Equal(0.5, QuizGrader.GradeCategorize(cat, new[] { "Nom", null }));
+
+        var num = new QuizQuestion { Type = QuestionType.Numeric, NumericAnswer = 28.3, Tolerance = 0.1, Unit = "cm²" };
+        Assert.Equal(1, QuizGrader.GradeNumeric(num, "28,27"));
+        Assert.Equal(1, QuizGrader.GradeNumeric(num, "28.3 cm²"));
+        Assert.Equal(0, QuizGrader.GradeNumeric(num, "29"));
+        Assert.Equal(0, QuizGrader.GradeNumeric(num, "abc"));
+        Assert.Equal(1, QuizGrader.GradeNumeric(new QuizQuestion { NumericAnswer = 1500 }, "1 500"));
+
+        var wo = new QuizQuestion { Type = QuestionType.WordOrder, Sentence = "I have never been to London." };
+        Assert.Equal(1, QuizGrader.GradeWordOrder(wo, QuizGrader.Words("I have never been to London.")));
+        Assert.True(QuizGrader.GradeWordOrder(wo, new[] { "I", "never", "have", "been", "to", "London." }) < 1);
+        Assert.Contains("28,3 cm²", QuizGrader.CorrectAnswerText(num));
+    }
+
+    [Fact]
+    public void All_Packs_Import_With_Valid_Questions()
+    {
+        using var tmp = new TempDir();
+        var pm = new ProfileManager(tmp.Path);
+        var s = pm.Open(pm.Create("A"));
+        Assert.True(ContentPacks.All.Count >= 18);
+        Assert.Equal(ContentPacks.All.Count, ContentPacks.All.Select(p => p.Id).Distinct().Count());
+        foreach (var pack in ContentPacks.All)
+        {
+            var (deckItem, quizItem) = ContentPacks.Import(s, pack, new Random(1));
+            var deck = s.LoadDeck(deckItem.Id);
+            var quiz = s.LoadQuiz(quizItem.Id);
+            Assert.True(deck.Cards.Count >= 8, pack.Id);
+            Assert.True(quiz.Questions.Count >= 4, pack.Id);
+            foreach (var q in quiz.Questions) Assert.True(QuizGrader.Validate(q) == null, pack.Id + " : " + q.Prompt + " → " + QuizGrader.Validate(q));
+            // Chaque question « à la main » doit être juste avec sa propre réponse
+            foreach (var q in quiz.Questions)
+            {
+                switch (q.Type)
+                {
+                    case QuestionType.Ordering: Assert.Equal(1, QuizGrader.GradeOrdering(q, q.Items)); break;
+                    case QuestionType.Categorize: Assert.Equal(1, QuizGrader.GradeCategorize(q, q.Pairs.Select(p => p.Right).ToList())); break;
+                    case QuestionType.Numeric: Assert.Equal(1, QuizGrader.GradeNumeric(q, q.NumericAnswer.ToString(System.Globalization.CultureInfo.InvariantCulture))); break;
+                    case QuestionType.WordOrder: Assert.Equal(1, QuizGrader.GradeWordOrder(q, QuizGrader.Words(q.Sentence))); break;
+                }
+            }
+        }
+        Assert.Equal(ContentPacks.All.Count, s.Library.ImportedPacks.Count);
+        Assert.Equal(100, ContentPacks.Get("verbes-irreguliers")!.Cards.Length);
+    }
+
+    [Fact]
+    public void Themes_Are_Unique_And_Numerous()
+    {
+        Assert.True(SlideThemes.All.Count >= 24);
+        Assert.Equal(SlideThemes.All.Count, SlideThemes.All.Select(t => t.Id).Distinct().Count());
+    }
+
+    [Fact]
+    public void Phone_Payload_Includes_New_Fields()
+    {
+        using var tmp = new TempDir();
+        var pm = new ProfileManager(tmp.Path);
+        var s = pm.Open(pm.Create("A"));
+        ContentPacks.Import(s, ContentPacks.Get("systeme-solaire")!);
+        var json = StudyDesk.Core.Phone.PhonePayload.BuildJson(s, DateTime.Now);
+        Assert.Contains("\"items\":[\"Mercure\"", json);
+        Assert.Contains("\"examMode\"", json);
+    }
+}

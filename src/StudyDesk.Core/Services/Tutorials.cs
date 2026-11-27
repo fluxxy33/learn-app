@@ -330,6 +330,124 @@ Une image trouvée sur Internet appartient à quelqu'un. Les images de Wikimedia
 
 Une image doit **expliquer** quelque chose : un schéma, une carte, une photo d'époque. Évite les images décoratives.
 """),
+
+        new("catalogue", "Utiliser le catalogue", "Prise en main", 2,
+            "Ajouter en un clic des fiches et des quiz prêts à l'emploi : capitales, dates, formules, verbes…",
+            """
+# Utiliser le catalogue
+
+Le **Catalogue** contient des contenus déjà prêts : capitales, grandes dates, tables de multiplication, formules, tableau périodique, verbes irréguliers, figures de style, notions de philosophie…
+
+## Ajouter un contenu
+
+1. Ouvre le **Catalogue** dans la barre de gauche.
+2. Choisis un contenu et clique sur **Ajouter**.
+3. Un paquet de fiches et un quiz sont créés dans la bonne matière.
+
+## Le personnaliser
+
+Les contenus ajoutés sont à toi : tu peux supprimer des fiches, en ajouter, corriger une réponse ou ajouter des images.
+
+> Astuce : commence par un seul paquet et révise-le quelques jours avant d'en ajouter un autre.
+""", TutorialAction.None),
+
+        new("vocabulaire", "Mémoriser du vocabulaire", "Mémoriser", 4,
+            "Les méthodes qui marchent pour retenir des mots en langue étrangère.",
+            """
+# Mémoriser du vocabulaire
+
+## Peu de mots, souvent
+
+Mieux vaut **10 mots par jour** que 70 la veille du contrôle. La répétition espacée s'occupe du reste.
+
+## Dans les deux sens
+
+Crée les fiches dans les deux sens : anglais → français **et** français → anglais. Le bouton **Fiche inverse** le fait pour toi.
+
+## En contexte
+
+Un mot s'apprend mieux dans une phrase. Au verso, ajoute un exemple : « to borrow : emprunter — Can I borrow your pen? »
+
+## Les faux amis
+
+Attention aux mots qui ressemblent au français : *library* (bibliothèque), *actually* (en fait), *sensible* (raisonnable).
+
+## À voix haute
+
+Prononce le mot quand tu révises : tu mémorises aussi le son.
+
+> Le catalogue contient déjà 100 verbes irréguliers et du vocabulaire anglais et espagnol.
+""", TutorialAction.NewDeck, null, "Créer un paquet de vocabulaire"),
+
+        new("carte-mentale", "Faire une carte mentale", "Méthodes", 3,
+            "Organiser un chapitre en schéma pour le comprendre et le retenir.",
+            """
+# Faire une carte mentale
+
+## Le principe
+
+Le sujet au **centre**, les grandes idées en **branches**, les détails en **sous-branches**. Le cerveau retient mieux une image organisée qu'un long texte.
+
+## Les règles
+
+- Des **mots-clés**, pas de phrases.
+- Une **couleur** par branche.
+- Des **dessins** et des symboles : flèches, icônes, petits schémas.
+
+## Dans StudyDesk
+
+- Le modèle **Carte mentale** prépare le plan en texte.
+- L'outil **Dessin** (Insertion › Dessin / schéma) permet de tracer la carte avec des formes et des flèches.
+""", TutorialAction.NewDocumentFromTemplate, "carte", "Créer une carte mentale"),
+
+        new("stress", "Gérer le stress des examens", "Organisation", 3,
+            "Dormir, s'organiser, respirer : arriver serein le jour J.",
+            """
+# Gérer le stress des examens
+
+## Avant
+
+- **Planifie** tes révisions : le stress vient souvent de l'impression de ne pas avoir le temps.
+- **Dors** suffisamment : la mémoire se consolide pendant le sommeil.
+- Fais des **pauses** et bouge un peu (méthode Pomodoro).
+
+## La veille
+
+- Relis seulement tes fiches « À retenir », n'apprends rien de nouveau.
+- Prépare tes affaires : convocation, stylos, calculatrice.
+
+## Le jour J
+
+- Lis **tout le sujet** avant de commencer.
+- Commence par ce que tu sais faire.
+- Si tu bloques : respire lentement (4 secondes pour inspirer, 4 pour expirer) et passe à la question suivante.
+
+> Le stress n'est pas ton ennemi : un peu de stress aide à se concentrer.
+"""),
+
+        new("controle-maths", "Réussir un contrôle de maths", "Méthodes", 4,
+            "Apprendre le cours, s'entraîner et bien rédiger.",
+            """
+# Réussir un contrôle de maths
+
+## Connaître le cours par cœur
+
+Définitions, propriétés et formules : mets-les en **fiches**. Le catalogue contient déjà les formules de géométrie et les identités remarquables.
+
+## S'entraîner
+
+Refais les exercices du cours **sans regarder la correction**. Comprendre une correction ne suffit pas : il faut savoir refaire.
+
+## Bien rédiger
+
+- Écris les **données** et ce que l'on cherche.
+- Cite la **propriété** utilisée (« D'après le théorème de Pythagore… »).
+- Fais une **phrase de conclusion** avec l'unité.
+
+## Vérifier
+
+Ton résultat est-il **cohérent** ? Une longueur négative ou une probabilité supérieure à 1, c'est une erreur.
+"""),
     };
 
     public static Tutorial? Get(string id) => All.FirstOrDefault(t => t.Id == id);
