@@ -402,6 +402,7 @@ public sealed class SlideEditorView : EditorShell, IPage, IEditor
     {
         _stage.Children.Clear();
         _stageRoot.Background = SlideRenderer.Background(CurrentSlide, Theme);
+        _stage.Children.Add(SlideRenderer.Decoration(Theme));
         foreach (var e in CurrentSlide.Elements)
             _stage.Children.Add(new ElementHost(this, e, e == _selected));
     }
@@ -549,9 +550,20 @@ public sealed class SlideEditorView : EditorShell, IPage, IEditor
     private ContextMenu ThemeMenu(FrameworkElement target)
     {
         var m = new ContextMenu { PlacementTarget = target, Placement = PlacementMode.Bottom };
-        var wrap = new WrapPanel { Width = 520, Margin = new Thickness(4) };
+        var panel = new StackPanel { Width = 520, Margin = new Thickness(4) };
+        WrapPanel? wrap = null;
+        string? category = null;
         foreach (var t in SlideThemes.All)
         {
+            if (t.Category != category)
+            {
+                category = t.Category;
+                var h = Ui.Text(category, "Label");
+                h.Margin = new Thickness(4, panel.Children.Count == 0 ? 0 : 8, 0, 2);
+                panel.Children.Add(h);
+                wrap = new WrapPanel();
+                panel.Children.Add(wrap);
+            }
             var preview = new Slide();
             preview.Elements.Add(SlideshowFactory.Text(true, t.Name, 80, 220, 1120, 160, 110, TextAlign.Center, bold: true));
             preview.Elements.Add(new SlideElement { Type = SlideElementType.Shape, Shape = ShapeKind.Rectangle, X = 440, Y = 440, Width = 400, Height = 24, FillHex = t.Accent });
@@ -568,9 +580,9 @@ public sealed class SlideEditorView : EditorShell, IPage, IEditor
                 RenderStage();
                 Changed(false);
             };
-            wrap.Children.Add(thumb);
+            wrap!.Children.Add(thumb);
         }
-        m.Items.Add(new MenuItem { Header = wrap, StaysOpenOnClick = true });
+        m.Items.Add(new MenuItem { Header = new ScrollViewer { Content = panel, MaxHeight = 560, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }, StaysOpenOnClick = true });
         return m;
     }
 

@@ -81,6 +81,10 @@ public sealed class ReviewHubView : PageBase
         practice.Margin = new Thickness(6, 0, 0, 0);
         practice.IsEnabled = deck.Cards.Count > 0;
         buttons.Children.Add(practice);
+        var typing = Ui.Button("Écrire", (_, _) => ReviewSessionView.StartTyping(item.Id), "SecondaryButton", Icons.Edit, "S'entraîner en écrivant la réponse au clavier");
+        typing.Margin = new Thickness(6, 0, 0, 0);
+        typing.IsEnabled = deck.Cards.Count > 0;
+        buttons.Children.Add(typing);
         var edit = new Button { Style = Ui.Style("IconButton"), Content = Icons.Edit, ToolTip = "Modifier les fiches", Margin = new Thickness(4, 0, 0, 0) };
         edit.Click += (_, _) => ItemActions.Open(item);
         buttons.Children.Add(edit);
@@ -148,7 +152,15 @@ public sealed class ReviewSessionView : UserControl, IPage
         Launch(decks, true, (decks.FirstOrDefault().Item?.Title ?? "") + " · entraînement libre");
     }
 
-    private static void Launch(List<(LibraryItem Item, Deck Deck)> decks, bool practice, string title)
+    /// <summary>Entraînement en écrivant la réponse au clavier (ne change pas les dates de révision).</summary>
+    public static void StartTyping(string deckId)
+    {
+        var store = AppState.Store;
+        var decks = store.AllDecks().Where(d => d.Item.Id == deckId).ToList();
+        Launch(decks, true, (decks.FirstOrDefault().Item?.Title ?? "") + " · écrire la réponse", typing: true);
+    }
+
+    private static void Launch(List<(LibraryItem Item, Deck Deck)> decks, bool practice, string title, bool typing = false)
     {
         var store = AppState.Store;
         List<Entry> queue;
@@ -167,13 +179,18 @@ public sealed class ReviewSessionView : UserControl, IPage
             DialogWindow.Info("Rien à réviser", practice ? "Ce paquet ne contient aucune fiche." : "Tout est révisé pour aujourd'hui. Tu peux faire un entraînement libre si tu veux continuer.");
             return;
         }
-        AppState.Main.Navigate(new ReviewSessionView(queue, practice, title));
+        AppState.Main.Navigate(new ReviewSessionView(queue, practice, title, typing));
     }
 
-    private ReviewSessionView(List<Entry> queue, bool practice, string title)
+    private readonly bool _typing;
+    private int _typedRight, _typedTotal;
+    private TextBox? _answerBox;
+
+    private ReviewSessionView(List<Entry> queue, bool practice, string title, bool typing = false)
     {
         _queue = queue;
         _practice = practice;
+        _typing = typing;
         _total = queue.Count;
         Focusable = true;
 
@@ -253,10 +270,58 @@ public sealed class ReviewSessionView : UserControl, IPage
         var e = _queue[0];
         _info.Text = $"{e.Item.Title} · {Ui.Plural(_queue.Count, "fiche restante", "fiches restantes")}" + (e.Card.IsNew ? " · nouvelle fiche" : "");
         AddFace("QUESTION", e.Card.Front, e.Card.FrontImage);
+        if (_typing)
+        {
+            _answerBox = new TextBox { FontSize = 18, Padding = new Thickness(10, 8, 10, 8), Margin = new Thickness(0, 16, 0, 0), MaxWidth = 520 };
+            _answerBox.KeyDown += (_, k) => { if (k.Key == Key.Enter) { CheckTyped(); k.Handled = true; } };
+            _cardContent.Children.Add(_answerBox);
+            var check = new Button { Style = Ui.Style("AccentButton"), Content = "Vérifier  (Entrée)", Padding = new Thickness(20, 12, 20, 12), HorizontalAlignment = HorizontalAlignment.Stretch };
+            check.Click += (_, _) => CheckTyped();
+            _bottom.Content = check;
+            Dispatcher.BeginInvoke(() => _answerBox?.Focus(), System.Windows.Threading.DispatcherPriority.Input);
+            Animate(false);
+            return;
+        }
         var reveal = new Button { Style = Ui.Style("AccentButton"), Content = "Afficher la réponse  (Espace)", Padding = new Thickness(20, 12, 20, 12), HorizontalAlignment = HorizontalAlignment.Stretch };
         reveal.Click += (_, _) => Reveal();
         _bottom.Content = reveal;
         Animate(false);
+    }
+
+    /// <summary>Compare la réponse tapée au verso de la fiche (accents, majuscules et petites fautes tolérés).</summary>
+    public static bool TypedAnswerMatches(string typed, string back)
+    {
+        static string Clean(string s) => System.Text.RegularExpressions.Regex.Replace(QuizGrader.Normalize(s), @"[^\p{L}\p{N}']+", " ").Trim();
+        var g = Clean(typed);
+        var b = Clean(back);
+        if (g.Length == 0) return false;
+        if (QuizGrader.TextMatches(g, b)) return true;
+        // Une des parties de la réponse (séparées par — ; / , ou parenthèses)
+        foreach (var part in System.Text.RegularExpressions.Regex.Split(back, @"[—;/,()\n]|\bou\b"))
+        {
+            var p = Clean(part);
+            if (p.Length > 1 && QuizGrader.TextMatches(g, p)) return true;
+        }
+        return b.Contains(g) && g.Length >= b.Length * 0.6;
+    }
+
+    private void CheckTyped()
+    {
+        if (_revealed || _queue.Count == 0 || _answerBox == null) return;
+        var e = _queue[0];
+        var ok = TypedAnswerMatches(_answerBox.Text, e.Card.Back);
+        _typedTotal++;
+        if (ok) _typedRight++;
+        _answerBox.IsReadOnly = true;
+        _answerBox.BorderThickness = new Thickness(2);
+        _answerBox.SetResourceReference(Control.BorderBrushProperty, ok ? "Good" : "Bad");
+        var verdict = Ui.Text(ok ? "✓ Juste !" : "✗ Pas tout à fait", "H3");
+        verdict.SetResourceReference(TextBlock.ForegroundProperty, ok ? "Good" : "Bad");
+        verdict.HorizontalAlignment = HorizontalAlignment.Center;
+        verdict.Margin = new Thickness(0, 8, 0, 0);
+        _cardContent.Children.Add(verdict);
+        Reveal();
+        Focus();
     }
 
     private void AddFace(string label, string text, string? image)
@@ -359,6 +424,13 @@ public sealed class ReviewSessionView : UserControl, IPage
         t.HorizontalAlignment = HorizontalAlignment.Center;
         t.Margin = new Thickness(0, 12, 0, 8);
         _cardContent.Children.Add(t);
+        if (_typing && _typedTotal > 0)
+        {
+            var typed = Ui.Text($"Réponses écrites : {_typedRight} justes sur {_typedTotal}.", "H3");
+            typed.HorizontalAlignment = HorizontalAlignment.Center;
+            typed.Margin = new Thickness(0, 0, 0, 6);
+            _cardContent.Children.Add(typed);
+        }
         var s = Ui.Text($"{Ui.Plural(_counts.Sum(), "réponse")} en {minutes} min : {_counts[3]} faciles, {_counts[2]} bien, {_counts[1]} difficiles, {_counts[0]} à revoir.", "Muted");
         s.HorizontalAlignment = HorizontalAlignment.Center;
         s.TextAlignment = TextAlignment.Center;

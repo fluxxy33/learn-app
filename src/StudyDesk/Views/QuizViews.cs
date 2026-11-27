@@ -21,6 +21,24 @@ public static class QuizText
         QuestionType.FillBlanks => "Texte à trous",
         QuestionType.ShortAnswer => "Réponse courte",
         QuestionType.Matching => "Relier",
+        QuestionType.Ordering => "Remettre dans l'ordre",
+        QuestionType.Categorize => "Classer",
+        QuestionType.Numeric => "Calcul / nombre",
+        QuestionType.WordOrder => "Phrase à reconstituer",
+        _ => ""
+    };
+
+    public static string TypeDescription(QuestionType t) => t switch
+    {
+        QuestionType.MultipleChoice => "Une ou plusieurs bonnes réponses parmi des choix",
+        QuestionType.TrueFalse => "Une affirmation à juger",
+        QuestionType.FillBlanks => "Une phrase avec des mots à retrouver",
+        QuestionType.ShortAnswer => "Taper un mot ou une courte réponse",
+        QuestionType.Matching => "Associer des éléments deux par deux",
+        QuestionType.Ordering => "Chronologie, étapes, classement du plus petit au plus grand…",
+        QuestionType.Categorize => "Ranger des éléments dans des groupes",
+        QuestionType.Numeric => "Un résultat de calcul, avec une marge et une unité",
+        QuestionType.WordOrder => "Remettre les mots d'une phrase dans le bon ordre (langues)",
         _ => ""
     };
 }
@@ -121,11 +139,25 @@ public sealed class QuizEditorView : EditorShell, IPage, IEditor
         };
 
         var add = new List<UIElement>();
-        foreach (QuestionType t in Enum.GetValues<QuestionType>())
+        Button newQ = null!;
+        newQ = Ui.Tool(Icons.Add, "Nouvelle question", "Choisir le type de question à ajouter", (_, _) =>
         {
-            var type = t;
-            add.Add(Ui.Tool(Icons.Add, QuizText.TypeName(t), "Ajouter une question : " + QuizText.TypeName(t), (_, _) => AddQuestion(type)));
-        }
+            var m = new ContextMenu { PlacementTarget = newQ, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+            foreach (QuestionType t in Enum.GetValues<QuestionType>())
+            {
+                var type = t;
+                var header = new StackPanel();
+                header.Children.Add(new TextBlock { Text = QuizText.TypeName(t), FontWeight = FontWeights.SemiBold });
+                header.Children.Add(Ui.Text(QuizText.TypeDescription(t), "Muted"));
+                var mi = new MenuItem { Header = header };
+                mi.Click += (_, _) => AddQuestion(type);
+                m.Items.Add(mi);
+            }
+            m.IsOpen = true;
+        });
+        add.Add(newQ);
+        add.Add(Ui.Tool(Icons.Add, "QCM", "Ajouter un QCM", (_, _) => AddQuestion(QuestionType.MultipleChoice)));
+        add.Add(Ui.Tool(Icons.Add, "Texte à trous", "Ajouter un texte à trous", (_, _) => AddQuestion(QuestionType.FillBlanks)));
         add.Add(Ui.Separator());
         add.Add(Ui.Tool(Icons.Up, null, "Monter la question", (_, _) => MoveQuestion(-1)));
         add.Add(Ui.Tool(Icons.Down, null, "Descendre la question", (_, _) => MoveQuestion(1)));
@@ -136,6 +168,18 @@ public sealed class QuizEditorView : EditorShell, IPage, IEditor
         shuffle.Click += (_, _) => { _quiz.ShuffleQuestions = shuffle.IsChecked == true; Save(); };
         add.Add(shuffle);
         AddRibbonTab("Questions", RibbonRow(add.ToArray()), true);
+
+        // Options du quiz : chrono et mode examen
+        var chrono = new ComboBox { Width = 150, VerticalAlignment = VerticalAlignment.Center, ToolTip = "Temps pour répondre à chaque question" };
+        var times = new[] { (0, "Pas de chrono"), (10, "10 s par question"), (20, "20 s par question"), (30, "30 s par question"), (60, "1 min par question"), (120, "2 min par question") };
+        foreach (var (_, label) in times) chrono.Items.Add(label);
+        chrono.SelectedIndex = Math.Max(0, Array.FindIndex(times, x => x.Item1 == _quiz.SecondsPerQuestion));
+        chrono.SelectionChanged += (_, _) => { _quiz.SecondsPerQuestion = times[Math.Max(0, chrono.SelectedIndex)].Item1; Save(); };
+        var exam = new CheckBox { Content = "Mode examen (correction à la fin)", IsChecked = _quiz.ExamMode, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
+        exam.Click += (_, _) => { _quiz.ExamMode = exam.IsChecked == true; Save(); };
+        var timerIcon = Ui.Icon(Icons.Timer, 15);
+        timerIcon.Margin = new Thickness(6, 0, 6, 0);
+        AddRibbonTab("Options", RibbonRow(timerIcon, chrono, exam));
         RightActions.Children.Add(Ui.Button("Faire le quiz", (_, _) => { Save(); QuizPlayerView.Start(_item); }, "AccentButton", Icons.Play));
 
         var grid = new Grid { Margin = new Thickness(12, 0, 12, 12) };
@@ -217,6 +261,16 @@ public sealed class QuizEditorView : EditorShell, IPage, IEditor
                 break;
             case QuestionType.FillBlanks:
                 q.Prompt = "Complète la phrase.";
+                break;
+            case QuestionType.Ordering:
+                q.Prompt = "Remets dans l'ordre.";
+                break;
+            case QuestionType.Categorize:
+                q.Prompt = "Classe chaque élément dans la bonne catégorie.";
+                q.Pairs.AddRange(new[] { new MatchPair(), new MatchPair(), new MatchPair(), new MatchPair() });
+                break;
+            case QuestionType.WordOrder:
+                q.Prompt = "Remets les mots dans l'ordre.";
                 break;
         }
         var index = _current == null ? _quiz.Questions.Count : _quiz.Questions.IndexOf(_current) + 1;
@@ -452,6 +506,89 @@ public sealed class QuizEditorView : EditorShell, IPage, IEditor
                 addPair.HorizontalAlignment = HorizontalAlignment.Left;
                 _editor.Children.Add(addPair);
                 break;
+
+            case QuestionType.Ordering:
+                _editor.Children.Add(Label("Éléments dans le BON ordre (un par ligne)"));
+                var items = Multi(string.Join("\n", q.Items), 120);
+                items.TextChanged += (_, _) => { q.Items = items.Text.Split('\n').Select(a => a.Trim()).Where(a => a.Length > 0).ToList(); Validate(); Changed(); };
+                _editor.Children.Add(items);
+                _editor.Children.Add(Hint("L'élève verra les éléments mélangés et devra les remettre dans cet ordre. Exemples : dates, étapes d'une expérience, nombres du plus petit au plus grand."));
+                break;
+
+            case QuestionType.Categorize:
+                _editor.Children.Add(Label("Élément → catégorie"));
+                var cats = new StackPanel();
+                void FillCats()
+                {
+                    cats.Children.Clear();
+                    foreach (var p in q.Pairs.ToList())
+                    {
+                        var row = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+                        row.ColumnDefinitions.Add(new ColumnDefinition());
+                        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
+                        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0.7, GridUnitType.Star) });
+                        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                        var pair = p;
+                        var l = new TextBox { Text = p.Left, Padding = new Thickness(6, 4, 6, 4), ToolTip = "Élément" };
+                        l.TextChanged += (_, _) => { pair.Left = l.Text; Validate(); Changed(); };
+                        row.Children.Add(l);
+                        var arrow = Ui.Icon(Icons.Forward, 12);
+                        Grid.SetColumn(arrow, 1);
+                        row.Children.Add(arrow);
+                        var known = QuizGrader.Categories(q);
+                        var r = new ComboBox { IsEditable = true, Text = p.Right, ItemsSource = known, ToolTip = "Catégorie (tape un nouveau nom ou choisis-en une)" };
+                        r.AddHandler(System.Windows.Controls.Primitives.TextBoxBase.TextChangedEvent, new TextChangedEventHandler((_, _) => { pair.Right = r.Text; Validate(); Changed(); }));
+                        Grid.SetColumn(r, 2);
+                        row.Children.Add(r);
+                        var del = new Button { Style = Ui.Style("IconButton"), Content = Icons.Cancel, FontSize = 11, ToolTip = "Supprimer" };
+                        del.Click += (_, _) => { q.Pairs.Remove(pair); FillCats(); Validate(); Changed(); };
+                        Grid.SetColumn(del, 3);
+                        row.Children.Add(del);
+                        cats.Children.Add(row);
+                    }
+                }
+                FillCats();
+                _editor.Children.Add(cats);
+                var addCat = Ui.Button("Ajouter un élément", (_, _) => { q.Pairs.Add(new MatchPair { Right = QuizGrader.Categories(q).FirstOrDefault() ?? "" }); FillCats(); Changed(); }, "SubtleButton", Icons.Add);
+                addCat.HorizontalAlignment = HorizontalAlignment.Left;
+                _editor.Children.Add(addCat);
+                _editor.Children.Add(Hint("Il faut au moins deux catégories. Exemple : « rapidement » → Adverbe, « maison » → Nom."));
+                break;
+
+            case QuestionType.Numeric:
+                var numRow = new WrapPanel();
+                TextBox NumBox(string label, string value, Action<string> set, double width)
+                {
+                    var sp = new StackPanel { Margin = new Thickness(0, 0, 16, 0) };
+                    sp.Children.Add(Label(label));
+                    var tb = new TextBox { Text = value, Width = width, Padding = new Thickness(6, 4, 6, 4) };
+                    tb.TextChanged += (_, _) => { set(tb.Text); Validate(); Changed(); };
+                    sp.Children.Add(tb);
+                    numRow.Children.Add(sp);
+                    return tb;
+                }
+                NumBox("Bonne réponse", QuizGrader.FormatNumber(q.NumericAnswer), v => { if (QuizGrader.TryParseNumber(v, out var d)) q.NumericAnswer = d; }, 120);
+                NumBox("Marge acceptée (±)", QuizGrader.FormatNumber(q.Tolerance), v => { if (QuizGrader.TryParseNumber(v, out var d)) q.Tolerance = Math.Abs(d); }, 100);
+                NumBox("Unité (facultatif)", q.Unit, v => q.Unit = v.Trim(), 100);
+                _editor.Children.Add(numRow);
+                _editor.Children.Add(Hint("La virgule et le point sont acceptés. Avec une marge de 0,1, la réponse 28,27 est acceptée pour 28,3."));
+                break;
+
+            case QuestionType.WordOrder:
+                _editor.Children.Add(Label("La phrase correcte"));
+                var sentence = new TextBox { Text = q.Sentence, Padding = new Thickness(8, 6, 8, 6), FontSize = 15 };
+                var wordsPreview = Ui.Text("", "Muted");
+                void UpdateWords()
+                {
+                    var w = QuizGrader.Words(q.Sentence);
+                    wordsPreview.Text = w.Count == 0 ? "" : $"{Ui.Plural(w.Count, "mot")} qui seront mélangés : " + string.Join("  ·  ", w.OrderBy(x => x.GetHashCode()));
+                }
+                sentence.TextChanged += (_, _) => { q.Sentence = sentence.Text; UpdateWords(); Validate(); Changed(); };
+                _editor.Children.Add(sentence);
+                wordsPreview.Margin = new Thickness(0, 6, 0, 0);
+                _editor.Children.Add(wordsPreview);
+                UpdateWords();
+                break;
         }
 
         _editor.Children.Add(Label("Explication (affichée après la réponse, facultatif)"));
@@ -486,6 +623,7 @@ public sealed class QuizEditorView : EditorShell, IPage, IEditor
 /// <summary>Faire un quiz : une question à la fois, correction immédiate, score final.</summary>
 public sealed class QuizPlayerView : UserControl, IPage
 {
+    // OnLeave est défini plus bas (arrêt du chrono)
     public string NavKey => "quiz";
     private readonly LibraryItem _item;
     private readonly List<QuizQuestion> _questions;
@@ -510,13 +648,17 @@ public sealed class QuizPlayerView : UserControl, IPage
             return;
         }
         if (quiz.ShuffleQuestions) valid = valid.OrderBy(_ => Random.Shared.Next()).ToList();
-        AppState.Main.Navigate(new QuizPlayerView(item, valid));
+        AppState.Main.Navigate(new QuizPlayerView(item, valid, quiz.SecondsPerQuestion, quiz.ExamMode));
     }
 
-    private QuizPlayerView(LibraryItem item, List<QuizQuestion> questions)
+    private QuizPlayerView(LibraryItem item, List<QuizQuestion> questions, int secondsPerQuestion, bool examMode)
     {
         _item = item;
         _questions = questions;
+        _secondsPerQuestion = secondsPerQuestion;
+        _examMode = examMode;
+        _timer.Tick += (_, _) => OnTimerTick();
+        Unloaded += (_, _) => _timer.Stop();
         var root = new DockPanel();
         var top = new StackPanel { Margin = new Thickness(24, 16, 24, 0) };
         var head = new DockPanel();
@@ -531,7 +673,11 @@ public sealed class QuizPlayerView : UserControl, IPage
         top.Children.Add(head);
         _progress.Margin = new Thickness(0, 12, 0, 6);
         top.Children.Add(_progress);
-        top.Children.Add(_info);
+        var infoRow = new DockPanel();
+        DockPanel.SetDock(_clock, Dock.Right);
+        infoRow.Children.Add(_clock);
+        infoRow.Children.Add(_info);
+        top.Children.Add(infoRow);
         DockPanel.SetDock(top, Dock.Top);
         root.Children.Add(top);
         _bottom.Margin = new Thickness(24, 8, 24, 24);
@@ -559,7 +705,7 @@ public sealed class QuizPlayerView : UserControl, IPage
         _progress.Value = _index * 100.0 / _questions.Count;
         if (_index >= _questions.Count) { ShowResults(); return; }
         var q = _questions[_index];
-        _info.Text = $"Question {_index + 1} sur {_questions.Count} · {QuizText.TypeName(q.Type)}";
+        _info.Text = $"Question {_index + 1} sur {_questions.Count} · {QuizText.TypeName(q.Type)}" + (_examMode ? " · mode examen" : "");
 
         var prompt = new TextBlock { Text = q.Type == QuestionType.FillBlanks && string.IsNullOrWhiteSpace(q.Prompt) ? "Complète la phrase." : q.Prompt, FontSize = 20, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
         prompt.SetResourceReference(TextBlock.ForegroundProperty, "Fg");
@@ -709,8 +855,148 @@ public sealed class QuizPlayerView : UserControl, IPage
                 };
                 break;
             }
+            case QuestionType.Ordering:
+            {
+                area.Children.Add(Ui.Text("Utilise les flèches pour remettre les éléments dans l'ordre.", "Muted"));
+                var order = q.Items.Where(i => i.Trim().Length > 0).OrderBy(_ => _rnd.Next()).ToList();
+                if (order.SequenceEqual(q.Items.Where(i => i.Trim().Length > 0)) && order.Count > 1) (order[0], order[1]) = (order[1], order[0]);
+                var list = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
+                var locked = false;
+                void Fill(bool showResult = false)
+                {
+                    list.Children.Clear();
+                    for (int i = 0; i < order.Count; i++)
+                    {
+                        var idx = i;
+                        var row = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+                        var num = new TextBlock { Text = (i + 1) + ".", Width = 28, FontSize = 16, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
+                        num.SetResourceReference(TextBlock.ForegroundProperty, "Accent");
+                        DockPanel.SetDock(num, Dock.Left);
+                        row.Children.Add(num);
+                        var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+                        var up = new Button { Style = Ui.Style("IconButton"), Content = Icons.Up, ToolTip = "Monter", IsEnabled = !locked && i > 0 };
+                        up.Click += (_, _) => { (order[idx - 1], order[idx]) = (order[idx], order[idx - 1]); Fill(); };
+                        var down = new Button { Style = Ui.Style("IconButton"), Content = Icons.Down, ToolTip = "Descendre", IsEnabled = !locked && i < order.Count - 1 };
+                        down.Click += (_, _) => { (order[idx + 1], order[idx]) = (order[idx], order[idx + 1]); Fill(); };
+                        buttons.Children.Add(up);
+                        buttons.Children.Add(down);
+                        DockPanel.SetDock(buttons, Dock.Right);
+                        row.Children.Add(buttons);
+                        var item = new Border { CornerRadius = new CornerRadius(8), Padding = new Thickness(12, 8, 12, 8), BorderThickness = new Thickness(1.5) };
+                        item.SetResourceReference(Border.BackgroundProperty, "Surface2");
+                        var expected = q.Items.Where(x => x.Trim().Length > 0).ToList();
+                        item.SetResourceReference(Border.BorderBrushProperty, !showResult ? "Line" : QuizGrader.Normalize(order[i]) == QuizGrader.Normalize(expected[i]) ? "Good" : "Bad");
+                        var t = new TextBlock { Text = order[i], FontSize = 16, TextWrapping = TextWrapping.Wrap };
+                        t.SetResourceReference(TextBlock.ForegroundProperty, "Fg");
+                        item.Child = t;
+                        row.Children.Add(item);
+                        list.Children.Add(row);
+                    }
+                }
+                Fill();
+                area.Children.Add(list);
+                _grader = () => { locked = true; Fill(true); return QuizGrader.GradeOrdering(q, order); };
+                break;
+            }
+            case QuestionType.Categorize:
+            {
+                var categories = QuizGrader.Categories(q);
+                area.Children.Add(Ui.Text("Choisis la catégorie de chaque élément.", "Muted"));
+                var combos = new List<ComboBox>();
+                foreach (var p in q.Pairs.Select((p, i) => (p, i)).OrderBy(_ => _rnd.Next()))
+                {
+                    var row = new Grid { Margin = new Thickness(0, 10, 0, 0), Tag = p.i };
+                    row.ColumnDefinitions.Add(new ColumnDefinition());
+                    row.ColumnDefinitions.Add(new ColumnDefinition());
+                    var l = new TextBlock { Text = p.p.Left, FontSize = 16, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 12, 0) };
+                    l.SetResourceReference(TextBlock.ForegroundProperty, "Fg");
+                    row.Children.Add(l);
+                    var cb = new ComboBox { FontSize = 15, ItemsSource = categories, Tag = p.i };
+                    Grid.SetColumn(cb, 1);
+                    row.Children.Add(cb);
+                    combos.Add(cb);
+                    area.Children.Add(row);
+                }
+                _grader = () =>
+                {
+                    var chosen = new string?[q.Pairs.Count];
+                    foreach (var cb in combos)
+                    {
+                        var i = (int)cb.Tag;
+                        chosen[i] = cb.SelectedItem as string;
+                        cb.IsEnabled = false;
+                        var ok = chosen[i] != null && QuizGrader.Normalize(chosen[i]!) == QuizGrader.Normalize(q.Pairs[i].Right);
+                        cb.BorderThickness = new Thickness(2);
+                        cb.SetResourceReference(Control.BorderBrushProperty, ok ? "Good" : "Bad");
+                        cb.ToolTip = ok ? null : "Bonne réponse : " + q.Pairs[i].Right;
+                    }
+                    return QuizGrader.GradeCategorize(q, chosen);
+                };
+                break;
+            }
+            case QuestionType.Numeric:
+            {
+                var row = new StackPanel { Orientation = Orientation.Horizontal };
+                var box = new TextBox { FontSize = 20, Width = 200, Padding = new Thickness(10, 8, 10, 8) };
+                row.Children.Add(box);
+                if (q.Unit.Length > 0)
+                {
+                    var unit = Ui.Text(q.Unit, "H2");
+                    unit.Margin = new Thickness(10, 0, 0, 0);
+                    unit.VerticalAlignment = VerticalAlignment.Center;
+                    row.Children.Add(unit);
+                }
+                area.Children.Add(row);
+                Dispatcher.BeginInvoke(() => box.Focus(), DispatcherPriority.Input);
+                _grader = () =>
+                {
+                    box.IsReadOnly = true;
+                    var sc = QuizGrader.GradeNumeric(q, box.Text);
+                    box.BorderThickness = new Thickness(2);
+                    box.SetResourceReference(Control.BorderBrushProperty, sc > 0 ? "Good" : "Bad");
+                    return sc;
+                };
+                break;
+            }
+            case QuestionType.WordOrder:
+            {
+                var words = QuizGrader.Words(q.Sentence).Select((w, i) => (w, i)).OrderBy(_ => _rnd.Next()).ToList();
+                var chosen = new List<(string w, int i)>();
+                var built = new WrapPanel { MinHeight = 48 };
+                var pool = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
+                var locked = false;
+                var builtBorder = new Border { CornerRadius = new CornerRadius(8), Padding = new Thickness(8), BorderThickness = new Thickness(1.5), Child = built };
+                builtBorder.SetResourceReference(Border.BorderBrushProperty, "Line");
+                Button Chip(string text, Action onClick)
+                {
+                    var b = new Button { Style = Ui.Style("SecondaryButton"), Content = new TextBlock { Text = text, FontSize = 16 }, Margin = new Thickness(0, 0, 6, 6), IsEnabled = !locked };
+                    b.Click += (_, _) => onClick();
+                    return b;
+                }
+                void Refresh()
+                {
+                    built.Children.Clear();
+                    pool.Children.Clear();
+                    foreach (var c in chosen.ToList()) built.Children.Add(Chip(c.w, () => { chosen.Remove(c); words.Add(c); Refresh(); }));
+                    foreach (var c in words.ToList()) pool.Children.Add(Chip(c.w, () => { words.Remove(c); chosen.Add(c); Refresh(); }));
+                    if (chosen.Count == 0) built.Children.Add(Ui.Text("Clique sur les mots ci-dessous pour construire la phrase.", "Muted"));
+                }
+                Refresh();
+                area.Children.Add(builtBorder);
+                area.Children.Add(pool);
+                _grader = () =>
+                {
+                    locked = true;
+                    var sc = QuizGrader.GradeWordOrder(q, chosen.Select(c => c.w).ToList());
+                    Refresh();
+                    builtBorder.SetResourceReference(Border.BorderBrushProperty, sc >= 0.999 ? "Good" : "Bad");
+                    return sc;
+                };
+                break;
+            }
         }
 
+        StartTimer();
         var check = Ui.Button("Valider  (Entrée)", (_, _) => Check(), "AccentButton");
         check.Padding = new Thickness(20, 12, 20, 12);
         check.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -724,19 +1010,61 @@ public sealed class QuizPlayerView : UserControl, IPage
         if (c is ContentControl { Content: TextBlock tb }) tb.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
     }
 
-    private void Check()
+    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private int _secondsLeft;
+    private readonly int _secondsPerQuestion;
+    private readonly bool _examMode;
+    private readonly TextBlock _clock = new() { FontSize = 15, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Right };
+
+    private void StartTimer()
+    {
+        _timer.Stop();
+        if (_secondsPerQuestion <= 0) { _clock.Text = ""; return; }
+        _secondsLeft = _secondsPerQuestion;
+        UpdateClock();
+        _timer.Start();
+    }
+
+    private void UpdateClock()
+    {
+        _clock.Text = $"⏱ {_secondsLeft / 60}:{_secondsLeft % 60:00}";
+        _clock.SetResourceReference(TextBlock.ForegroundProperty, _secondsLeft <= 5 ? "Bad" : "FgMuted");
+    }
+
+    private void OnTimerTick()
+    {
+        _secondsLeft--;
+        UpdateClock();
+        if (_secondsLeft <= 0)
+        {
+            _timer.Stop();
+            Check(timeout: true);
+        }
+    }
+
+    public void OnLeave() => _timer.Stop();
+
+    private void Check(bool timeout = false)
     {
         if (_checked || _grader == null) return;
         _checked = true;
+        _timer.Stop();
         var q = _questions[_index];
         var s = _grader();
         _score += s;
         _answers.Add((q, s));
+        if (_examMode)
+        {
+            // Pas de correction en mode examen : on passe directement à la suite
+            _index++;
+            ShowQuestion();
+            return;
+        }
         var ok = s >= 0.999;
         var fb = new Border { CornerRadius = new CornerRadius(8), Padding = new Thickness(14, 10, 14, 10), Margin = new Thickness(0, 20, 0, 0) };
         fb.SetResourceReference(Border.BackgroundProperty, ok ? "GoodSoft" : "BadSoft");
         var sp = new StackPanel();
-        var head = new TextBlock { Text = ok ? "Bonne réponse !" : s > 0 ? $"Presque : {s * 100:0} % des points" : "Mauvaise réponse", FontWeight = FontWeights.SemiBold, FontSize = 15 };
+        var head = new TextBlock { Text = timeout && !ok ? "Temps écoulé !" : ok ? "Bonne réponse !" : s > 0 ? $"Presque : {s * 100:0} % des points" : "Mauvaise réponse", FontWeight = FontWeights.SemiBold, FontSize = 15 };
         head.SetResourceReference(TextBlock.ForegroundProperty, ok ? "Good" : "Bad");
         sp.Children.Add(head);
         if (!ok)
@@ -773,8 +1101,31 @@ public sealed class QuizPlayerView : UserControl, IPage
         s.HorizontalAlignment = HorizontalAlignment.Center;
         s.TextAlignment = TextAlignment.Center;
         _body.Children.Add(s);
+        _timer.Stop();
+        _clock.Text = "";
         var mistakes = _answers.Where(a => a.Score < 0.999).ToList();
-        if (mistakes.Count > 0)
+        if (_examMode)
+        {
+            var h = Ui.Text("Correction", "H3");
+            h.Margin = new Thickness(0, 24, 0, 8);
+            _body.Children.Add(h);
+            foreach (var (q, sc) in _answers)
+            {
+                var sp = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
+                var mark = Ui.Icon(sc >= 0.999 ? Icons.Accept : Icons.Cancel, 16);
+                mark.SetResourceReference(TextBlock.ForegroundProperty, sc >= 0.999 ? "Good" : "Bad");
+                mark.VerticalAlignment = VerticalAlignment.Top;
+                mark.Margin = new Thickness(0, 2, 10, 0);
+                DockPanel.SetDock(mark, Dock.Left);
+                sp.Children.Add(mark);
+                var texts = new StackPanel();
+                texts.Children.Add(Ui.Text(q.Type == QuestionType.FillBlanks ? "Texte à trous" : q.Prompt, "H3"));
+                texts.Children.Add(Ui.Text("Réponse : " + QuizGrader.CorrectAnswerText(q), "Muted"));
+                sp.Children.Add(texts);
+                _body.Children.Add(sp);
+            }
+        }
+        else if (mistakes.Count > 0)
         {
             var h = Ui.Text("À retravailler", "H3");
             h.Margin = new Thickness(0, 24, 0, 8);

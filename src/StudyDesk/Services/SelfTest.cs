@@ -114,6 +114,74 @@ public static class SelfTest
             if (!json.Contains("\"decks\"") || !html.Contains("Pythagore")) throw new Exception("Réponse du serveur incomplète");
         });
 
+        // Nouveautés 1.1 : catalogue, nouveaux types de quiz, thèmes décorés, écrire la réponse
+        await Step("40-catalogue", () => { main.GoBack(); main.NavigateTo("catalog"); }, main);
+        LibraryItem? solarQuiz = null, solarDeck = null;
+        await Check("40b-catalogue-import", () =>
+        {
+            foreach (var pack in ContentPacks.All)
+            {
+                var (dk, qz) = ContentPacks.Import(store, pack);
+                if (pack.Id == "systeme-solaire") { solarQuiz = qz; solarDeck = dk; }
+            }
+            Log($"   catalogue : {ContentPacks.All.Count} contenus importés");
+        });
+        await Step("41-quiz-nouveaux-types-editeur", () =>
+        {
+            var q = store.LoadQuiz(solarQuiz!.Id);
+            q.ShuffleQuestions = false;
+            q.Questions = q.Questions.OrderByDescending(x => x.Type == QuestionType.Ordering).ToList();
+            store.SaveQuiz(q);
+            ItemActions.Open(solarQuiz!);
+        }, main);
+        await Step("42-quiz-remettre-dans-ordre", () => { main.GoBack(); QuizPlayerView.Start(solarQuiz!); }, main);
+        await Step("43-quiz-classer", () =>
+        {
+            main.GoBack();
+            var q = store.LoadQuiz(solarQuiz!.Id);
+            q.Questions = q.Questions.OrderByDescending(x => x.Type == QuestionType.Categorize).ToList();
+            q.SecondsPerQuestion = 30;
+            store.SaveQuiz(q);
+            QuizPlayerView.Start(solarQuiz!);
+        }, main);
+        await Step("44-quiz-phrase", () =>
+        {
+            main.GoBack();
+            var vocab = store.ItemsOf(ItemKind.Quiz).First(i => i.Title.StartsWith("Vocabulaire anglais"));
+            var q = store.LoadQuiz(vocab.Id);
+            q.ShuffleQuestions = false;
+            q.ExamMode = true;
+            q.Questions = q.Questions.OrderByDescending(x => x.Type == QuestionType.WordOrder).ToList();
+            store.SaveQuiz(q);
+            QuizPlayerView.Start(vocab);
+        }, main);
+        await Step("45-ecrire-la-reponse", () => { main.GoBack(); ReviewSessionView.StartTyping(solarDeck!.Id); }, main);
+        foreach (var themeId in new[] { "cahier", "tableau", "minuit", "histoire" })
+        {
+            await Step("46-theme-" + themeId, () =>
+            {
+                main.GoBack();
+                var s = store.LoadSlideshow(show.Id);
+                s.ThemeId = themeId;
+                store.SaveSlideshow(s);
+                ItemActions.Open(show);
+            }, main);
+        }
+        main.GoBack();
+        await Check("47-themes-rendu", () =>
+        {
+            var s = store.LoadSlideshow(show.Id);
+            foreach (var t in SlideThemes.All)
+            {
+                var canvas = SlideRenderer.Render(s.Slides[0], t);
+                canvas.Measure(new Size(1280, 720));
+                canvas.Arrange(new Rect(0, 0, 1280, 720));
+                var rtb = new RenderTargetBitmap(320, 180, 24, 24, PixelFormats.Pbgra32);
+                rtb.Render(canvas);
+            }
+            Log($"   thèmes : {SlideThemes.All.Count} rendus sans erreur");
+        });
+
         // Vraie souris, vrai clavier, fonctions en ligne
         SelfTestInteractive.SelfTestLog = Log;
         await Interactive("30-diaporama-souris-clavier", () => SelfTestInteractive.SlideDragWithRealMouse(main), main);

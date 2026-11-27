@@ -562,11 +562,7 @@ public sealed class QuestionsPreviewDialog : DialogWindow
         foreach (var q in questions)
         {
             var sp = new StackPanel();
-            var type = q.Type switch
-            {
-                QuestionType.MultipleChoice => "QCM", QuestionType.FillBlanks => "Texte à trous", QuestionType.ShortAnswer => "Réponse courte",
-                QuestionType.Matching => "Relier", _ => "Vrai / faux"
-            };
+            var type = QuizText.TypeName(q.Type);
             sp.Children.Add(new TextBlock { Text = type + " · " + (q.Type == QuestionType.FillBlanks ? q.ClozeText : q.Prompt), FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
             sp.Children.Add(Ui.Text("Réponse : " + QuizGrader.CorrectAnswerText(q), "Muted"));
             var cb = new CheckBox { IsChecked = true, Content = sp, Margin = new Thickness(0, 0, 0, 10) };

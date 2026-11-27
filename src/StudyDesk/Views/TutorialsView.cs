@@ -128,6 +128,9 @@ public sealed class TutorialsView : PageBase
             case TutorialAction.StartPomodoro:
                 AppState.Pomodoro.StartWork();
                 break;
+            case TutorialAction.OpenCatalog:
+                AppState.Main.NavigateTo("catalog");
+                break;
             case TutorialAction.OpenPhone:
                 AppState.Main.NavigateTo("phone");
                 break;

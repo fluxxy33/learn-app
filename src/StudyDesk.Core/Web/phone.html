@@ -107,6 +107,17 @@ nav.tabs button.on{color:var(--accent);font-weight:600}
 .feedback.ok{background:var(--good-soft);color:var(--good)}
 .feedback.ko{background:var(--bad-soft);color:var(--bad)}
 .feedback p{margin:4px 0 0;color:var(--fg)}
+.orow{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:var(--surface);border:1.5px solid var(--line)}
+.orow .onum{font-weight:700;color:var(--accent);min-width:24px}
+.orow .otxt{flex:1}
+.orow.ok{border-color:var(--good);background:var(--good-soft)} .orow.ko{border-color:var(--bad);background:var(--bad-soft)}
+.iconbtn:disabled{opacity:.3}
+.wbuilt{min-height:56px;display:flex;flex-wrap:wrap;gap:6px;padding:10px;border-radius:12px;border:1.5px dashed var(--line)}
+.wbuilt.ok{border-color:var(--good);border-style:solid} .wbuilt.ko{border-color:var(--bad);border-style:solid}
+.wpool{display:flex;flex-wrap:wrap;gap:6px}
+select.field{appearance:auto}
+select.field.ok{border-color:var(--good);background:var(--good-soft)} select.field.ko{border-color:var(--bad);background:var(--bad-soft)}
+.field:disabled{opacity:1}
 .score{font-size:3rem;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
 /* Lecture */
 article.doc{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;overflow-wrap:anywhere}
@@ -316,7 +327,9 @@ function updateSyncIndicator(){
 function setTitle(t){ $("title").textContent=t; }
 function push(screen){ stack.push(screen); render(); window.scrollTo(0,0); }
 function pop(){ stack.pop(); render(); }
+
 function render(){
+  if(window.__sdTimer){ clearInterval(window.__sdTimer); window.__sdTimer=null; }
   var v=$("view"); v.innerHTML="";
   $("backBtn").hidden = stack.length===0;
   document.querySelectorAll("nav.tabs button").forEach(function(b){ b.classList.toggle("on", b.dataset.tab===tab); });
@@ -540,7 +553,7 @@ function quizTab(v){
 function startQuiz(q){
   if(!q.questions.length){ toast("Ce quiz n'a pas encore de question."); return; }
   var qs = q.shuffle ? shuffle(q.questions) : q.questions.slice();
-  var st={quiz:q,questions:qs,index:0,score:0,mistakes:[]};
+  var st={quiz:q,questions:qs,index:0,score:0,mistakes:[],answers:[]};
   push(function(v){ quizPlayer(v,st); });
 }
 function quizPlayer(v,st){
@@ -549,7 +562,9 @@ function quizPlayer(v,st){
   if(st.index>=st.questions.length){ return quizResults(v,st); }
   var qq=st.questions[st.index];
   v.appendChild(el("div",{class:"progress"},[el("b",{style:"width:"+Math.round(st.index*100/st.questions.length)+"%"})]));
-  v.appendChild(el("div",{class:"muted",style:"font-size:.85rem",text:"Question "+(st.index+1)+" sur "+st.questions.length}));
+  var clock=el("span",{class:"clock"});
+  v.appendChild(el("div",{class:"muted",style:"font-size:.85rem;display:flex;justify-content:space-between"},[
+    el("span",{text:"Question "+(st.index+1)+" sur "+st.questions.length+(q.examMode?" · mode examen":"")}), clock]));
   var card=el("div",{class:"card pad stack"});
   v.appendChild(card);
   if(qq.prompt && qq.type!=="FillBlanks") card.appendChild(el("div",{class:"prompt",text:qq.prompt}));
@@ -676,16 +691,94 @@ function quizPlayer(v,st){
     };
   }
 
+  else if(qq.type==="Ordering"){
+    answerArea.appendChild(el("div",{class:"muted",style:"font-size:.85rem",text:"Utilise les flèches pour remettre dans l'ordre."}));
+    var order=shuffle(qq.items);
+    if(order.join("|")===qq.items.join("|") && order.length>1){ var t0=order[0]; order[0]=order[1]; order[1]=t0; }
+    var olist=el("div",{class:"stack"}); answerArea.appendChild(olist);
+    var olocked=false;
+    function fillOrder(show){
+      olist.innerHTML="";
+      order.forEach(function(it,i){
+        var good=normalize(it)===normalize(qq.items[i]);
+        olist.appendChild(el("div",{class:"orow"+(show?(good?" ok":" ko"):"")},[
+          el("span",{class:"onum",text:(i+1)+"."}), el("span",{class:"otxt",text:it}),
+          el("button",{class:"iconbtn",disabled:olocked||i===0,"aria-label":"Monter",text:"▲",onclick:function(){var t=order[i-1];order[i-1]=order[i];order[i]=t;fillOrder();}}),
+          el("button",{class:"iconbtn",disabled:olocked||i===order.length-1,"aria-label":"Descendre",text:"▼",onclick:function(){var t=order[i+1];order[i+1]=order[i];order[i]=t;fillOrder();}})
+        ]));
+      });
+    }
+    fillOrder(false);
+    grader=function(){ olocked=true; fillOrder(true); var ok=0; qq.items.forEach(function(it,i){ if(normalize(order[i])===normalize(it)) ok++; }); return ok/qq.items.length; };
+  } else if(qq.type==="Categorize"){
+    answerArea.appendChild(el("div",{class:"muted",style:"font-size:.85rem",text:"Choisis la catégorie de chaque élément."}));
+    var selects=[];
+    shuffle(qq.pairs.map(function(p,i){return {p:p,i:i};})).forEach(function(x){
+      var sel=el("select",{class:"field"},[el("option",{value:"",text:"— choisir —"})].concat(qq.categories.map(function(c){return el("option",{value:c,text:c});})));
+      selects.push({sel:sel,i:x.i});
+      answerArea.appendChild(el("div",{class:"stack",style:"gap:4px"},[el("b",{text:x.p.left}),sel]));
+    });
+    grader=function(){
+      var ok=0;
+      selects.forEach(function(x){
+        var good=x.sel.value && normalize(x.sel.value)===normalize(qq.pairs[x.i].right);
+        if(good) ok++;
+        x.sel.disabled=true; x.sel.classList.add(good?"ok":"ko");
+      });
+      return ok/qq.pairs.length;
+    };
+  } else if(qq.type==="Numeric"){
+    var nbox=el("input",{class:"field",type:"text",inputmode:"decimal",placeholder:"Ta réponse",autocomplete:"off",style:"max-width:220px"});
+    nbox.addEventListener("keydown",function(e){ if(e.key==="Enter") checkBtn.click(); });
+    answerArea.appendChild(el("div",{style:"display:flex;align-items:center;gap:10px"},[nbox, qq.unit?el("b",{text:qq.unit}):null]));
+    setTimeout(function(){nbox.focus();},50);
+    grader=function(){
+      var t=(nbox.value||"").replace(/\s|\u00a0/g,"").replace(",",".").replace(/[^\d.\-eE+]+$/,"");
+      var v=parseFloat(t), tol=Math.max(Math.abs(qq.tolerance||0),1e-9);
+      var good=!isNaN(v) && Math.abs(v-qq.numericAnswer)<=tol;
+      nbox.disabled=true; nbox.classList.add(good?"ok":"ko");
+      return good?1:0;
+    };
+  } else if(qq.type==="WordOrder"){
+    var pool=shuffle(qq.words.map(function(w,i){return {w:w,i:i};}));
+    if(pool.map(function(x){return x.w;}).join(" ")===qq.words.join(" ") && pool.length>1){ var t1=pool[0]; pool[0]=pool[1]; pool[1]=t1; }
+    var chosen=[], wlocked=false;
+    var built=el("div",{class:"wbuilt"}), wpool=el("div",{class:"wpool"});
+    answerArea.appendChild(built); answerArea.appendChild(wpool);
+    function fillWords(){
+      built.innerHTML=""; wpool.innerHTML="";
+      if(!chosen.length) built.appendChild(el("span",{class:"muted",text:"Touche les mots dans le bon ordre."}));
+      chosen.forEach(function(x){ built.appendChild(el("button",{class:"chip on",disabled:wlocked,text:x.w,onclick:function(){ chosen.splice(chosen.indexOf(x),1); pool.push(x); fillWords(); }})); });
+      pool.forEach(function(x){ wpool.appendChild(el("button",{class:"chip",disabled:wlocked,text:x.w,onclick:function(){ pool.splice(pool.indexOf(x),1); chosen.push(x); fillWords(); }})); });
+    }
+    fillWords();
+    grader=function(){
+      wlocked=true; fillWords();
+      var ok=0; qq.words.forEach(function(w,i){ if(chosen[i] && normalize(chosen[i].w)===normalize(w)) ok++; });
+      var s=(ok===qq.words.length && chosen.length===qq.words.length)?1:ok/qq.words.length/2;
+      built.classList.add(s>=0.999?"ok":"ko");
+      return s;
+    };
+  }
+
+  // Chrono
+  var timer=null, left=q.secondsPerQuestion||0;
+  function tick(){ clock.textContent="⏱ "+Math.floor(left/60)+":"+("0"+(left%60)).slice(-2); clock.style.color=left<=5?"var(--bad)":""; }
+  if(left>0){ tick(); timer=setInterval(function(){ left--; tick(); if(left<=0){ clearInterval(timer); timer=null; checkBtn.click(); } },1000); window.__sdTimer=timer; }
+
   checkBtn.onclick=function(){
+    if(timer){ clearInterval(timer); timer=null; }
+    if(checkBtn.dataset.done) return;
+    checkBtn.dataset.done="1";
     var s=grader();
     st.score+=s;
     var ok=s>=0.999;
+    st.answers.push({q:qq,s:s});
     if(!ok) st.mistakes.push(qq);
-    var fbx=el("div",{class:"feedback "+(ok?"ok":"ko")},[el("b",{text: ok?"Bonne réponse !":(s>0?"Presque : "+Math.round(s*100)+" % des points":"Mauvaise réponse")})]);
-    if(!ok && qq.type!=="FillBlanks" && qq.type!=="MultipleChoice" && qq.type!=="TrueFalse" && qq.type!=="Matching")
-      fbx.appendChild(el("p",{text:"Réponse attendue : "+((qq.accepted||[])[0]||"")}));
-    if(!ok && qq.type==="Matching")
-      fbx.appendChild(el("p",{text:qq.pairs.map(function(p){return p.left+" → "+p.right;}).join(" ; ")}));
+    if(q.examMode){ st.index++; render(); window.scrollTo(0,0); return; }
+    var fbx=el("div",{class:"feedback "+(ok?"ok":"ko")},[el("b",{text: left===0&&q.secondsPerQuestion&&!ok?"Temps écoulé !":ok?"Bonne réponse !":(s>0?"Presque : "+Math.round(s*100)+" % des points":"Mauvaise réponse")})]);
+    if(!ok && qq.type!=="MultipleChoice" && qq.type!=="TrueFalse")
+      fbx.appendChild(el("p",{text:"Réponse : "+(qq.answerText||"")}));
     if(qq.explanation) fbx.appendChild(el("p",{text:qq.explanation}));
     feedback.appendChild(fbx);
     actions.innerHTML="";
@@ -706,16 +799,15 @@ function quizResults(v,st){
     el("div",{class:"muted",text:(Math.round(st.score*10)/10).toString().replace(".",",")+" point(s) sur "+max}),
     el("b",{text: pct>=80?"Excellent travail !":pct>=50?"C'est bien, continue comme ça.":"Revois tes fiches et réessaie."})
   ]));
-  if(st.mistakes.length){
-    v.appendChild(el("div",{class:"section-title",text:"À retravailler"}));
+  var shown = st.quiz.examMode ? st.answers : st.mistakes.map(function(q){return {q:q,s:0};});
+  if(shown.length){
+    v.appendChild(el("div",{class:"section-title",text:st.quiz.examMode?"Correction":"À retravailler"}));
     var list=el("div",{class:"card list"});
-    st.mistakes.forEach(function(q){
-      var ans = q.type==="MultipleChoice" ? q.choices.filter(function(c){return c.correct;}).map(function(c){return c.text;}).join(" ; ")
-        : q.type==="TrueFalse" ? (q.correctBool?"Vrai":"Faux")
-        : q.type==="ShortAnswer" ? (q.accepted||[])[0]
-        : q.type==="FillBlanks" ? (q.cloze||[]).map(function(p){return p.text!=null?p.text:p.answers[0];}).join("")
-        : q.pairs.map(function(p){return p.left+" → "+p.right;}).join(" ; ");
-      list.appendChild(el("div",{class:"row"},[el("span",{class:"txt"},[el("b",{style:"white-space:normal",text:q.prompt||"Texte à trous"}),el("small",{text:ans})])]));
+    shown.forEach(function(a){
+      var q=a.q;
+      list.appendChild(el("div",{class:"row"},[
+        st.quiz.examMode?el("span",{class:"pill "+(a.s>=0.999?"":"muted"),text:a.s>=0.999?"✓":"✗"}):null,
+        el("span",{class:"txt"},[el("b",{style:"white-space:normal",text:q.prompt||"Texte à trous"}),el("small",{style:"white-space:normal;display:block",text:q.answerText||""})])]));
     });
     v.appendChild(list);
   }

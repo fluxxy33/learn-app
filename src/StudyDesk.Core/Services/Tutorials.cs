@@ -9,7 +9,8 @@ public enum TutorialAction
     StartPomodoro,
     OpenPhone,
     NewDeck,
-    NewQuiz
+    NewQuiz,
+    OpenCatalog
 }
 
 public sealed record Tutorial(
@@ -349,7 +350,7 @@ Le **Catalogue** contient des contenus déjà prêts : capitales, grandes dates,
 Les contenus ajoutés sont à toi : tu peux supprimer des fiches, en ajouter, corriger une réponse ou ajouter des images.
 
 > Astuce : commence par un seul paquet et révise-le quelques jours avant d'en ajouter un autre.
-""", TutorialAction.None),
+""", TutorialAction.OpenCatalog, null, "Ouvrir le catalogue"),
 
         new("vocabulaire", "Mémoriser du vocabulaire", "Mémoriser", 4,
             "Les méthodes qui marchent pour retenir des mots en langue étrangère.",

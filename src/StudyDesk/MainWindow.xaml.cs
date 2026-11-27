@@ -69,6 +69,7 @@ public partial class MainWindow : Window
         "library" => new LibraryView(),
         "review" => new ReviewHubView(),
         "quiz" => new QuizHubView(),
+        "catalog" => new CatalogView(),
         "stats" => new StatsView(),
         "tutorials" => new TutorialsView(),
         "phone" => new PhoneView(),
@@ -88,7 +89,7 @@ public partial class MainWindow : Window
     {
         var rb = key switch
         {
-            "home" => NavHome, "library" => NavLibrary, "review" => NavReview, "quiz" => NavQuiz, "stats" => NavStats,
+            "home" => NavHome, "library" => NavLibrary, "review" => NavReview, "quiz" => NavQuiz, "stats" => NavStats, "catalog" => NavCatalog,
             "tutorials" => NavTutorials, "phone" => NavPhone, "settings" => NavSettings, _ => NavHome
         };
         if (rb.IsChecked == true) { _history.Clear(); ShowPage(CreatePage(key)); }
@@ -119,7 +120,7 @@ public partial class MainWindow : Window
     private void HighlightNav(string key)
     {
         _suppressNav = true;
-        foreach (var rb in new[] { NavHome, NavLibrary, NavReview, NavQuiz, NavStats, NavTutorials, NavPhone, NavSettings })
+        foreach (var rb in new[] { NavHome, NavLibrary, NavReview, NavQuiz, NavCatalog, NavStats, NavTutorials, NavPhone, NavSettings })
             rb.IsChecked = (string)rb.Tag == key;
         _suppressNav = false;
     }

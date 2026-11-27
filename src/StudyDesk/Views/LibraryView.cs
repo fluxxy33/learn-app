@@ -45,6 +45,10 @@ public sealed class LibraryView : UserControl, IPage
         leftHead.Children.Add(lt);
         DockPanel.SetDock(leftHead, Dock.Top);
         leftDock.Children.Add(leftHead);
+        var catalogBtn = Ui.Button("Contenus prêts à l'emploi", (_, _) => AppState.Main.NavigateTo("catalog"), "SubtleButton", "\uE719");
+        catalogBtn.HorizontalContentAlignment = HorizontalAlignment.Left;
+        DockPanel.SetDock(catalogBtn, Dock.Bottom);
+        leftDock.Children.Add(catalogBtn);
         var importBtn = Ui.Button("Importer un fichier .studydesk", (_, _) => ItemActions.Import(Refresh), "SubtleButton", Icons.Import);
         importBtn.HorizontalContentAlignment = HorizontalAlignment.Left;
         DockPanel.SetDock(importBtn, Dock.Bottom);

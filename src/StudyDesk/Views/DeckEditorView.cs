@@ -61,6 +61,7 @@ public sealed class DeckEditorView : EditorShell, IPage, IEditor
         var review = RibbonRow(
             Ui.Tool(Icons.Play, "Réviser", "Réviser les fiches dues de ce paquet", (_, _) => { Save(); ReviewSessionView.Start(_item.Id); }),
             Ui.Tool(Icons.Cards, "Entraînement libre", "Revoir toutes les fiches sans changer les dates", (_, _) => { Save(); ReviewSessionView.StartPractice(_item.Id); }),
+            Ui.Tool(Icons.Edit, "Écrire la réponse", "S'entraîner en tapant la réponse au clavier", (_, _) => { Save(); ReviewSessionView.StartTyping(_item.Id); }),
             Ui.Separator(),
             Ui.Tool(Icons.Quiz, "Créer un quiz", "Générer un quiz (QCM, relier) à partir de ces fiches", (_, _) => MakeQuiz()));
         AddRibbonTab("Fiches", home, true);

@@ -38,6 +38,7 @@ public static class SlideRenderer
     public static Canvas Render(Slide slide, SlideTheme theme, bool includeInk = true)
     {
         var canvas = new Canvas { Width = W, Height = H, Background = Background(slide, theme), ClipToBounds = true };
+        canvas.Children.Add(Decoration(theme));
         foreach (var e in slide.Elements)
         {
             var visual = ElementVisual(e, theme);
@@ -58,6 +59,105 @@ public static class SlideRenderer
             canvas.Children.Add(ink);
         }
         return canvas;
+    }
+
+    /// <summary>Décoration du thème (bandeaux, cercles, motifs…), dessinée sous le contenu.</summary>
+    public static Canvas Decoration(SlideTheme theme)
+    {
+        var c = new Canvas { Width = W, Height = H, IsHitTestVisible = false };
+        var accent = Ui.ColorFromHex(theme.Accent, Colors.SteelBlue);
+        var accent2 = Ui.ColorFromHex(theme.Accent2 ?? theme.Accent, accent);
+        SolidColorBrush B(Color col, double opacity) { var b = new SolidColorBrush(Color.FromArgb((byte)(opacity * 255), col.R, col.G, col.B)); b.Freeze(); return b; }
+        void Add(UIElement e, double x, double y) { Canvas.SetLeft(e, x); Canvas.SetTop(e, y); c.Children.Add(e); }
+        Polygon Poly(Brush fill, params double[] pts)
+        {
+            var p = new Polygon { Fill = fill };
+            for (int i = 0; i + 1 < pts.Length; i += 2) p.Points.Add(new Point(pts[i], pts[i + 1]));
+            return p;
+        }
+        Rectangle Pattern(Drawing tile, double size)
+        {
+            var brush = new DrawingBrush(tile) { TileMode = TileMode.Tile, Viewport = new Rect(0, 0, size, size), ViewportUnits = BrushMappingMode.Absolute, Viewbox = new Rect(0, 0, size, size), ViewboxUnits = BrushMappingMode.Absolute };
+            brush.Freeze();
+            return new Rectangle { Width = W, Height = H, Fill = brush };
+        }
+        GeometryDrawing Line(Color col, double opacity, double thickness, Point a, Point b) =>
+            new(null, new Pen(B(col, opacity), thickness), new LineGeometry(a, b));
+
+        switch (theme.Decoration)
+        {
+            case SlideDecoration.TopBar:
+                Add(new Rectangle { Width = W, Height = 18, Fill = B(accent, 1) }, 0, 0);
+                Add(new Rectangle { Width = W, Height = 5, Fill = B(accent2, 0.45) }, 0, 18);
+                break;
+            case SlideDecoration.SideBar:
+                Add(new Rectangle { Width = 30, Height = H, Fill = B(accent, 1) }, 0, 0);
+                Add(new Rectangle { Width = 8, Height = H, Fill = B(accent2, 0.7) }, 30, 0);
+                break;
+            case SlideDecoration.Circles:
+                Add(new Ellipse { Width = 560, Height = 560, Fill = B(accent2, 0.10) }, -200, -230);
+                Add(new Ellipse { Width = 420, Height = 420, Fill = B(accent2, 0.09) }, 1000, 430);
+                Add(new Ellipse { Width = 150, Height = 150, Fill = B(accent2, 0.08) }, 1080, 50);
+                break;
+            case SlideDecoration.Wave:
+            {
+                var g = Geometry.Parse("M0,620 C320,560 640,700 960,640 C1120,610 1200,600 1280,610 L1280,720 L0,720 Z");
+                var g2 = Geometry.Parse("M0,660 C300,620 700,720 1000,670 C1150,645 1230,650 1280,655 L1280,720 L0,720 Z");
+                c.Children.Add(new Path { Data = g, Fill = B(accent2, 0.22) });
+                c.Children.Add(new Path { Data = g2, Fill = B(accent2, 0.30) });
+                break;
+            }
+            case SlideDecoration.Frame:
+                Add(new Rectangle { Width = W - 48, Height = H - 48, Stroke = B(accent2, 0.7), StrokeThickness = 4, RadiusX = 6, RadiusY = 6 }, 24, 24);
+                Add(new Rectangle { Width = W - 72, Height = H - 72, Stroke = B(accent2, 0.4), StrokeThickness = 1.5, RadiusX = 4, RadiusY = 4 }, 36, 36);
+                break;
+            case SlideDecoration.Dots:
+            {
+                var tile = new GeometryDrawing(B(accent2, 0.18), null, new EllipseGeometry(new Point(20, 20), 2.6, 2.6));
+                c.Children.Add(Pattern(tile, 40));
+                break;
+            }
+            case SlideDecoration.Diagonal:
+                c.Children.Add(Poly(B(accent, 0.16), 900, 0, W, 0, W, H, 1080, H));
+                c.Children.Add(Poly(B(accent2, 0.35), 990, 0, 1050, 0, 870, H, 810, H));
+                break;
+            case SlideDecoration.Corner:
+                c.Children.Add(Poly(B(accent2, 0.9), W, H, W, 400, 960, H));
+                c.Children.Add(Poly(B(accent, 0.25), 0, 0, 240, 0, 0, 170));
+                break;
+            case SlideDecoration.Notebook:
+            {
+                var tile = new DrawingGroup();
+                tile.Children.Add(new GeometryDrawing(Brushes.Transparent, null, new RectangleGeometry(new Rect(0, 0, 36, 36))));
+                tile.Children.Add(Line(accent2, 0.55, 1.2, new Point(0, 35), new Point(36, 35)));
+                c.Children.Add(Pattern(tile, 36));
+                Add(new Rectangle { Width = 2.5, Height = H, Fill = B(accent, 0.6) }, 110, 0);
+                break;
+            }
+            case SlideDecoration.Grid:
+            {
+                var tile = new DrawingGroup();
+                tile.Children.Add(new GeometryDrawing(Brushes.Transparent, null, new RectangleGeometry(new Rect(0, 0, 32, 32))));
+                tile.Children.Add(Line(accent2, 0.45, 1, new Point(0, 31.5), new Point(32, 31.5)));
+                tile.Children.Add(Line(accent2, 0.45, 1, new Point(31.5, 0), new Point(31.5, 32)));
+                c.Children.Add(Pattern(tile, 32));
+                break;
+            }
+            case SlideDecoration.Stripes:
+            {
+                var tile = new DrawingGroup();
+                tile.Children.Add(new GeometryDrawing(Brushes.Transparent, null, new RectangleGeometry(new Rect(0, 0, 40, 40))));
+                tile.Children.Add(Line(accent2, 0.35, 6, new Point(-10, 50), new Point(50, -10)));
+                tile.Children.Add(Line(accent2, 0.35, 6, new Point(-30, 30), new Point(30, -30)));
+                tile.Children.Add(Line(accent2, 0.35, 6, new Point(10, 70), new Point(70, 10)));
+                var r = Pattern(tile, 40);
+                r.Height = 70;
+                Canvas.SetTop(r, H - 70);
+                c.Children.Add(r);
+                break;
+            }
+        }
+        return c;
     }
 
     public static FrameworkElement ElementVisual(SlideElement e, SlideTheme theme)
