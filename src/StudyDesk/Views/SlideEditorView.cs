@@ -634,8 +634,14 @@ public sealed class SlideEditorView : EditorShell, IPage, IEditor
             _props.Children.Add(PropLabel("Texte"));
             var text = new TextBox { Text = e.Text, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 80, MaxHeight = 200, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(6) };
             _propText = text;
-            text.GotKeyboardFocus += (_, _) => PushUndo();
-            text.TextChanged += (_, _) => { e.Text = text.Text; Changed(false); RenderStageSoon(); };
+            var textUndo = false;
+            text.GotKeyboardFocus += (_, _) => textUndo = false;
+            text.TextChanged += (_, _) =>
+            {
+                if (e.Text == text.Text) return;
+                if (!textUndo) { PushUndo(); textUndo = true; }
+                e.Text = text.Text; Changed(false); RenderStageSoon();
+            };
             _props.Children.Add(text);
             _props.Children.Add(PropLabel("Taille du texte"));
             var size = new Slider { Minimum = 10, Maximum = 140, Value = e.FontSize, TickFrequency = 2, IsSnapToTickEnabled = true };
@@ -673,8 +679,13 @@ public sealed class SlideEditorView : EditorShell, IPage, IEditor
         {
             _props.Children.Add(PropLabel("Légende / source"));
             var cap = new TextBox { Text = e.Caption ?? "", TextWrapping = TextWrapping.Wrap, Padding = new Thickness(6) };
-            cap.GotKeyboardFocus += (_, _) => PushUndo();
-            cap.TextChanged += (_, _) => { e.Caption = cap.Text.Length == 0 ? null : cap.Text; Changed(false); RenderStageSoon(); };
+            var capUndo = false;
+            cap.GotKeyboardFocus += (_, _) => capUndo = false;
+            cap.TextChanged += (_, _) =>
+            {
+                if (!capUndo) { PushUndo(); capUndo = true; }
+                e.Caption = cap.Text.Length == 0 ? null : cap.Text; Changed(false); RenderStageSoon();
+            };
             _props.Children.Add(cap);
         }
 
