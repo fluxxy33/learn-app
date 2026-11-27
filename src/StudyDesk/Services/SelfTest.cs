@@ -114,6 +114,15 @@ public static class SelfTest
             if (!json.Contains("\"decks\"") || !html.Contains("Pythagore")) throw new Exception("Réponse du serveur incomplète");
         });
 
+        // Vraie souris, vrai clavier, fonctions en ligne
+        SelfTestInteractive.SelfTestLog = Log;
+        await Interactive("30-diaporama-souris-clavier", () => SelfTestInteractive.SlideDragWithRealMouse(main), main);
+        await Interactive("31-document-clavier-insertion", () => SelfTestInteractive.TypeInDocument(main), main);
+        await Interactive("32-revision-clavier", () => SelfTestInteractive.ReviewWithKeyboard(main), main);
+        await Check("33-dessin-export", SelfTestInteractive.DrawingDialogExport);
+        await Check("34-en-ligne-wikimedia-wikipedia", SelfTestInteractive.Online);
+        main.NavigateTo("home");
+
         // Thème sombre
         await Step("20-sombre-accueil", () => { ThemeService.Apply(AppTheme.Dark); main.NavigateTo("home"); }, main);
         await Step("21-sombre-document", () => ItemActions.Open(doc), main);
@@ -158,6 +167,22 @@ public static class SelfTest
         {
             await action();
             Log("OK      " + name);
+        }
+        catch (Exception ex)
+        {
+            Errors.Add(name + " : " + ex);
+            Log("ERREUR  " + name + " : " + ex.Message);
+        }
+    }
+
+    private static async Task Interactive(string name, Func<Task<string?>> action, Window window)
+    {
+        try
+        {
+            var result = await action();
+            await Wait(400);
+            Capture(window, name);
+            Log((result == null ? "OK      " : "INFO    ") + name + (result == null ? "" : " : " + result));
         }
         catch (Exception ex)
         {
