@@ -78,4 +78,16 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: StudyDesk-windows.zip
+          name: StudyDesk ${{ github.ref_name }}
+          body: |
+            ## Installer StudyDesk
+
+            1. Télécharge **StudyDesk.exe** ci-dessous.
+            2. Double-clique dessus. Si Windows affiche « Windows a protégé votre ordinateur », clique sur **Informations complémentaires** puis **Exécuter quand même**.
+            3. Écris ton prénom : c'est prêt !
+
+            Rien à installer : .NET est inclus. Windows 10 ou 11, 64 bits.
+            `StudyDesk-windows.zip` contient le même programme, avec le mode d'emploi.
+          files: |
+            StudyDesk-windows.zip
+            publish/StudyDesk.exe
